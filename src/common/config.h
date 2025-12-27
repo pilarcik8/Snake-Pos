@@ -1,0 +1,14 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define MAX_PLAYERS 10
+#define MAX_SNAKE_LENGTH 256
+#define MAX_WORLD_WIDTH 100
+#define MAX_WORLD_HEIGHT 100
+
+#define SERVER_TICK_MS 200
+#define PAUSE_DELAY_SEC 3
+#define EMPTY_GAME_TIMEOUT_SEC 10
+
+#endif
+
