@@ -6,12 +6,9 @@ SRC_DIR = src
 COMMON_DIR = $(SRC_DIR)/common
 SERVER_DIR = $(SRC_DIR)/server
 CLIENT_DIR = $(SRC_DIR)/client
-UTILS_DIR  = $(SRC_DIR)/utils
 
 COMMON_SRCS = \
-	$(COMMON_DIR)/protocol.c \
-	$(UTILS_DIR)/time_utils.c \
-	$(UTILS_DIR)/log.c
+	$(COMMON_DIR)/protocol.c
 
 SERVER_SRCS = \
 	$(SERVER_DIR)/server_main.c \
