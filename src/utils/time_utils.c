@@ -1,19 +1,15 @@
-#define _POSIX_C_SOURCE 200809L
-
 #include "time_utils.h"
-#include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 long time_ms() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (long)tv.tv_sec * 1000L + (long)tv.tv_usec / 1000L;
 }
 
 void sleep_ms(long ms) {
-    struct timespec ts;
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (ms % 1000) * 1000000;
-    nanosleep(&ts, NULL);
+    // jednoduché: iba pre malé oneskorenia (napr. 50ms)
+    usleep((useconds_t)(ms * 1000));
 }
 
