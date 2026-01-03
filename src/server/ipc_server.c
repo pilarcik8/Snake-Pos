@@ -1,13 +1,11 @@
 #include "ipc_server.h"
 
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
-
 
 int ipc_server_start(ipc_server_t *ipc, int port) {
     struct sockaddr_in addr;
@@ -24,7 +22,7 @@ int ipc_server_start(ipc_server_t *ipc, int port) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
+    addr.sin_port = htons((uint16_t)port);
 
     if (bind(ipc->server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         perror("bind");
@@ -46,10 +44,11 @@ int ipc_server_start(ipc_server_t *ipc, int port) {
         ipc->client_player_id[i] = -1;
     }
 
+    ipc->next_player_id = 1;
+
     printf("Server listening on port %d\n", port);
     return 0;
 }
-
 
 void ipc_server_accept(ipc_server_t *ipc) {
     struct sockaddr_in client_addr;
@@ -57,7 +56,6 @@ void ipc_server_accept(ipc_server_t *ipc) {
 
     int client_fd = accept(ipc->server_fd, (struct sockaddr *)&client_addr, &len);
     if (client_fd < 0) {
-        perror("accept");
         return;
     }
 
@@ -84,10 +82,7 @@ void ipc_server_accept(ipc_server_t *ipc) {
     pthread_mutex_unlock(&ipc->lock);
 }
 
-
-bool ipc_server_receive(ipc_server_t *ipc,
-                        client_message_t *msg,
-                        int *out_slot) {
+bool ipc_server_receive(ipc_server_t *ipc, client_message_t *msg, int *out_slot) {
     pthread_mutex_lock(&ipc->lock);
 
     for (int i = 0; i < MAX_PLAYERS; i++) {
@@ -114,16 +109,16 @@ bool ipc_server_receive(ipc_server_t *ipc,
     return false;
 }
 
-
-
 void ipc_server_send_state(ipc_server_t *ipc, server_message_t *state) {
     pthread_mutex_lock(&ipc->lock);
+
     for (int i = 0; i < MAX_PLAYERS; i++) {
         int fd = ipc->client_fds[i];
         if (fd > 0) {
             send(fd, state, sizeof(*state), 0);
         }
     }
+
     pthread_mutex_unlock(&ipc->lock);
 }
 

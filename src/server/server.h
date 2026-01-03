@@ -5,10 +5,12 @@
 #include "ipc_server.h"
 
 typedef struct {
-    int running;
+    bool running;
     pthread_t game_thread;
     pthread_t ipc_thread;
+    ipc_server_t *ipc;
 } server_t;
+
 
 void server_init(server_t *server);
 void server_run(server_t *server, ipc_server_t *ipc);

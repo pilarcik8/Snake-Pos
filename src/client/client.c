@@ -5,17 +5,14 @@
 #include <string.h>
 
 void client_init(client_t *c,
-                 const char *address,
-                 int port,
-                 int player_id) {
+                 const char *address) {
     memset(c, 0, sizeof(*c));
 
-    c->player_id = player_id;
     c->running = true;
 
     ipc_client_init(&c->ipc);
 
-    if (!ipc_client_connect(&c->ipc, address, port)) {
+    if (!ipc_client_connect(&c->ipc, address, 12345)) {
         c->running = false;
         return;
     }
@@ -26,7 +23,6 @@ void client_run(client_t *c) {
 
     client_message_t msg;
     msg.type = MSG_CONNECT;
-    msg.player_id = c->player_id;
     msg.direction = RIGHT;
 
     ipc_client_send(&c->ipc, &msg);
@@ -43,7 +39,6 @@ void client_shutdown(client_t *c) {
 
     client_message_t msg;
     msg.type = MSG_DISCONNECT;
-    msg.player_id = c->player_id;
     msg.direction = RIGHT;
 
     ipc_client_send(&c->ipc, &msg);

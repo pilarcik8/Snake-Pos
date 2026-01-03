@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include "../common/protocol.h"
+#include "../common/config.h"
 
 typedef struct {
     int server_fd;

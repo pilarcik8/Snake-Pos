@@ -58,7 +58,6 @@ void *input_thread_main(void *arg) {
         if (key == 'p') {
             client_message_t msg;
             msg.type = MSG_PAUSE;
-            msg.player_id = c->player_id;
             msg.direction = RIGHT;
 
             ipc_client_send(&c->ipc, &msg);
@@ -69,7 +68,6 @@ void *input_thread_main(void *arg) {
         if (key_to_dir(key, &dir)) {
             client_message_t msg;
             msg.type = MSG_INPUT;
-            msg.player_id = c->player_id;
             msg.direction = dir;
 
             ipc_client_send(&c->ipc, &msg);

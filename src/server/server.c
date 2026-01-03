@@ -337,13 +337,20 @@ void server_run(server_t *server, ipc_server_t *ipc) {
     ctx.server = server;
     ctx.ipc = ipc;
 
+    server->ipc = ipc;
+
     pthread_create(&server->game_thread, NULL, game_loop, &ctx);
     pthread_create(&server->ipc_thread, NULL, ipc_loop, &ctx);
 }
 
+
 void server_shutdown(server_t *server) {
     server->running = false;
+
+    close(server->ipc->server_fd); // odblokuje accept()
+
     pthread_join(server->game_thread, NULL);
     pthread_join(server->ipc_thread, NULL);
 }
+
 

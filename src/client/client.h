@@ -5,7 +5,6 @@
 #include <pthread.h>
 
 #include "ipc_client.h"
-#include "../common/protocol.h"
 
 // Stav klienta.
 typedef struct {
@@ -20,9 +19,7 @@ typedef struct {
 
 // Inicializuje klienta a pripoji ho na server.
 void client_init(client_t *c,
-                 const char *address,
-                 int port,
-                 int player_id);
+                 const char *address);
 
 void client_run(client_t *c);
 void client_shutdown(client_t *c);
