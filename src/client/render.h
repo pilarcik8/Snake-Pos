@@ -1,9 +1,9 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include "../common/protocol.h"
+#include <pthread.h>
 
-void *render_thread(void *arg);
+void *render_thread_main(void *arg);
 
 #endif
 

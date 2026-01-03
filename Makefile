@@ -16,7 +16,9 @@ SERVER_SRCS = \
 	$(SERVER_DIR)/game.c \
 	$(SERVER_DIR)/world.c \
 	$(SERVER_DIR)/snake.c \
-	$(SERVER_DIR)/ipc_server.c
+	$(SERVER_DIR)/ipc_server.c \
+	$(SERVER_DIR)/collisions.c \
+	$(SERVER_DIR)/fruit.c \
 
 CLIENT_SRCS = \
 	$(CLIENT_DIR)/client_main.c \

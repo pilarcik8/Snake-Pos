@@ -1,22 +1,24 @@
-#include "ipc_client.h"
+#include "client.h"
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
 
-int main() {
-    int fd = ipc_client_connect("127.0.0.1", 12345);
-    if (fd < 0) return 1;
-
-    client_message_t msg;
-    msg.type = MSG_CONNECT;
-    msg.player_id = 1;
-    msg.direction = UP;
-
-    ipc_client_send(fd, &msg);
-
-    while (1) {
-        sleep(1);
+int main(int argc, char **argv) {
+    if (argc < 4) {
+        printf("Pouzitie: %s <address> <port> <player_id>\n", argv[0]);
+        return 1;
     }
+
+    const char *address = argv[1];
+    int port = atoi(argv[2]);
+    int player_id = atoi(argv[3]);
+
+    client_t client;
+    client_init(&client, address, port, player_id);
+    client_run(&client);
+    client_shutdown(&client);
 
     return 0;
 }
+
+
 

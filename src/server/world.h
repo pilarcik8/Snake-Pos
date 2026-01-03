@@ -1,8 +1,14 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <stdbool.h>
 #include "../common/types.h"
 #include "../common/config.h"
+
+typedef enum {
+    WORLD_NO_OBSTACLES = 0,
+    WORLD_WITH_OBSTACLES = 1
+} world_kind_t;
 
 typedef struct {
     int width;
@@ -10,8 +16,19 @@ typedef struct {
     cell_t cells[MAX_WORLD_HEIGHT][MAX_WORLD_WIDTH];
 } world_t;
 
-void world_generate(world_t *world);
-bool world_is_free(world_t *world, int x, int y);
+/* inicializácia rozmerov + vyčistenie na CELL_EMPTY */
+bool world_init(world_t *w, int width, int height);
+
+/* generovanie sveta (bez prekážok / s prekážkami) */
+bool world_generate(world_t *w, world_kind_t kind, int obstacle_percent);
+
+/* načítanie sveta zo súboru (ASCII mapa: '#' stena, '.' prázdne) */
+bool world_load_from_file(world_t *w, const char *path);
+
+/* jednoduché operácie na bunkách */
+bool world_in_bounds(const world_t *w, int x, int y);
+bool world_is_free(const world_t *w, int x, int y);
+bool world_set_cell(world_t *w, int x, int y, cell_t c);
 
 #endif
 
