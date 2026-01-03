@@ -9,16 +9,25 @@ static void clear_screen(void) {
 }
 
 static void draw_state(const server_message_t *st) {
-    clear_screen();
-    printf("Cas: %d | Hracov: %d\n", st->game_time, st->player_count);
-    printf("WASD pohyb | p pauza | q odchod\n\n");
+  clear_screen();
+  printf("Cas: %d | Hracov: %d\n", st->game_time, st->player_count);
+  printf("WASD pohyb | p pauza | q odchod\n\n");
 
-    for (int s = 0; s < MAX_PLAYERS; s++) {
-        if (st->snakes[s].player_id < 0) continue;
-        printf("Hrac %d: %d\n", st->snakes[s].player_id, st->snakes[s].score);
-    }
+  for (int s = 0; s < MAX_PLAYERS; s++) {
+    if (st->snakes[s].player_id < 0) continue;
+    printf("Hrac %d: %d\n", st->snakes[s].player_id, st->snakes[s].score);
+  }
 
-    printf("\nOvocie: %d\n", st->fruit_count);
+  printf("\nOvocie: %d\n", st->fruit_count);
+  
+  for (int s = 0; s < MAX_PLAYERS; s++) {
+    if (!st->snakes[s].alive) continue;
+    printf("Snake %d head=(%d,%d) len=%d\n",
+           st->snakes[s].player_id,
+           st->snakes[s].body[0].x,
+           st->snakes[s].body[0].y,
+           st->snakes[s].length);
+  }
 }
 
 void *render_thread_main(void *arg) {

@@ -171,19 +171,20 @@ static void handle_input_locked(int player_id, direction_t dir) {
     snake_set_direction(&g.snakes[slot], dir);
 }
 
-static void process_client_message_locked(const client_message_t *msg) {
-    if (msg->type == MSG_CONNECT) {
-        handle_connect_locked(msg->player_id);
+static void process_client_message_locked(int player_id, 
+                                          const client_message_t *msg) {
+ if (msg->type == MSG_CONNECT) {
+        handle_connect_locked(player_id);
         return;
     }
 
     if (msg->type == MSG_DISCONNECT) {
-        handle_disconnect_locked(msg->player_id);
+        handle_disconnect_locked(player_id);
         return;
     }
 
     if (msg->type == MSG_INPUT) {
-        handle_input_locked(msg->player_id, msg->direction);
+        handle_input_locked(player_id, msg->direction);
         return;
     }
 
@@ -296,15 +297,13 @@ static void *ipc_loop(void *arg) {
         ipc_server_accept(ctx->ipc);
 
         client_message_t msg;
-        msg.type = (message_type_t)(-1);
+        int slot = -1;
 
-        ipc_server_receive(ctx->ipc, &msg);
-
-        if (msg.type == MSG_CONNECT || msg.type == MSG_DISCONNECT ||
-            msg.type == MSG_INPUT || msg.type == MSG_PAUSE) {
+        if (ipc_server_receive(ctx->ipc, &msg, &slot)) {
+            int player_id = ctx->ipc->client_player_id[slot];
 
             pthread_mutex_lock(&g.lock);
-            process_client_message_locked(&msg);
+            process_client_message_locked(player_id, &msg);
             pthread_mutex_unlock(&g.lock);
         }
 

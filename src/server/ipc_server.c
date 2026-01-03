@@ -1,8 +1,13 @@
 #include "ipc_server.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 
 int ipc_server_start(ipc_server_t *ipc, int port) {
     struct sockaddr_in addr;
@@ -23,55 +28,93 @@ int ipc_server_start(ipc_server_t *ipc, int port) {
 
     if (bind(ipc->server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         perror("bind");
+        close(ipc->server_fd);
         return -1;
     }
 
     if (listen(ipc->server_fd, MAX_PLAYERS) < 0) {
         perror("listen");
+        close(ipc->server_fd);
         return -1;
     }
 
     pthread_mutex_init(&ipc->lock, NULL);
 
+    // Inicializacia client slotov
+    for (int i = 0; i < MAX_PLAYERS; i++) {
+        ipc->client_fds[i] = 0;
+        ipc->client_player_id[i] = -1;
+    }
+
     printf("Server listening on port %d\n", port);
     return 0;
 }
+
 
 void ipc_server_accept(ipc_server_t *ipc) {
     struct sockaddr_in client_addr;
     socklen_t len = sizeof(client_addr);
 
-    int client_fd = accept(ipc->server_fd,
-                            (struct sockaddr *)&client_addr, &len);
+    int client_fd = accept(ipc->server_fd, (struct sockaddr *)&client_addr, &len);
     if (client_fd < 0) {
         perror("accept");
         return;
     }
 
     pthread_mutex_lock(&ipc->lock);
+
+    int slot = -1;
     for (int i = 0; i < MAX_PLAYERS; i++) {
         if (ipc->client_fds[i] == 0) {
-            ipc->client_fds[i] = client_fd;
-            printf("Client connected (slot %d)\n", i);
+            slot = i;
             break;
         }
     }
+
+    if (slot < 0) {
+        pthread_mutex_unlock(&ipc->lock);
+        close(client_fd);
+        return;
+    }
+
+    ipc->client_fds[slot] = client_fd;
+    ipc->client_player_id[slot] = ipc->next_player_id++;
+    printf("Client connected (slot %d, id %d)\n", slot, ipc->client_player_id[slot]);
+
     pthread_mutex_unlock(&ipc->lock);
 }
 
-void ipc_server_receive(ipc_server_t *ipc, client_message_t *msg) {
+
+bool ipc_server_receive(ipc_server_t *ipc,
+                        client_message_t *msg,
+                        int *out_slot) {
     pthread_mutex_lock(&ipc->lock);
+
     for (int i = 0; i < MAX_PLAYERS; i++) {
         int fd = ipc->client_fds[i];
-        if (fd > 0) {
-            ssize_t r = recv(fd, msg, sizeof(*msg), MSG_DONTWAIT);
-            if (r > 0) {
-                printf("Received message from player %d\n", msg->player_id);
-            }
+        if (fd <= 0) continue;
+
+        ssize_t r = recv(fd, msg, sizeof(*msg), MSG_DONTWAIT);
+
+        if (r == 0) {
+            close(fd);
+            ipc->client_fds[i] = 0;
+            ipc->client_player_id[i] = -1;
+            continue;
+        }
+
+        if (r == (ssize_t)sizeof(*msg)) {
+            *out_slot = i;
+            pthread_mutex_unlock(&ipc->lock);
+            return true;
         }
     }
+
     pthread_mutex_unlock(&ipc->lock);
+    return false;
 }
+
+
 
 void ipc_server_send_state(ipc_server_t *ipc, server_message_t *state) {
     pthread_mutex_lock(&ipc->lock);

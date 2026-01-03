@@ -5,8 +5,6 @@
 #include "types.h"
 #include <stdbool.h>
 
-#include "../common/types.h"
-
 // Typ spravy medzi klientom a serverom.
 typedef enum {
     MSG_CONNECT,
@@ -20,7 +18,6 @@ typedef enum {
 // Sprava posielana z klienta na server.
 typedef struct {
     message_type_t type;
-    int player_id;
     direction_t direction;
 } client_message_t;
 
@@ -36,7 +33,8 @@ typedef struct {
 // Sprava posielana zo servera klientom.
 typedef struct {
     message_type_t type;
-
+    
+    int assigned_player_id;
     int game_time;
     int player_count;
 

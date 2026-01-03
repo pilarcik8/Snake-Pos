@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <pthread.h>
 
 static server_t server;
 static ipc_server_t ipc;
@@ -25,9 +26,10 @@ int main(void) {
 
     server_run(&server, &ipc);
 
-    while (1) {
-        pause();
-    }
+    pthread_join(server.game_thread, NULL);
+    pthread_join(server.ipc_thread, NULL);
+
     return 0;
 }
+
 
