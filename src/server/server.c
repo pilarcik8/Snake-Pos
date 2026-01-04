@@ -1,5 +1,12 @@
 #define _POSIX_C_SOURCE 199309
 
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <time.h>
+
 #include "server.h"
 #include "game.h"
 #include "world.h"
@@ -8,13 +15,6 @@
 #include "fruit.h"
 #include "../common/protocol.h"
 #include "../common/config.h"
-
-#include <pthread.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <time.h>
 
 // Globalny stav servera.
 typedef struct {
@@ -222,35 +222,26 @@ static void sleep_ms(int ms) {
 
 static void *game_loop(void *arg) {
     server_context_t *ctx = (server_context_t *)arg;
-    int game_time = 0;
-    int ms_accum = 0;
 
     while (ctx->server->running) {
         sleep_ms(SERVER_TICK_MS);
-        ms_accum += SERVER_TICK_MS;
 
         pthread_mutex_lock(&g.lock);
 
-        // Cas hry bezi po sekundach
-        if (ms_accum >= 1000) {
-            ms_accum -= 1000;
-            g.game.elapsed_time++;
+        if (!game_update(&g.game, g.active_snakes, SERVER_TICK_MS)) {
+            server_message_t end_msg;
+            memset(&end_msg, 0, sizeof(end_msg));
+            end_msg.type = MSG_GAME_OVER;
+            end_msg.game_time = g.game.elapsed_time;
+            end_msg.player_count = g.active_snakes;
 
-            if (!game_update(&g.game, g.active_snakes)) {
-                server_message_t end_msg;
-                memset(&end_msg, 0, sizeof(end_msg));
-                end_msg.type = MSG_GAME_OVER;
-                end_msg.game_time = g.game.elapsed_time;
-                end_msg.player_count = g.active_snakes;
+            pthread_mutex_unlock(&g.lock);
 
-                pthread_mutex_unlock(&g.lock);
-                ipc_server_send_state(ctx->ipc, &end_msg);
-                ctx->server->running = false;
-                break;
-            }
+            ipc_server_send_state(ctx->ipc, &end_msg);
+            ctx->server->running = false;
+            break;
         }
 
-        // Pohyb hadov – kazdy tick
         for (int i = 0; i < MAX_PLAYERS; i++) {
             if (!g.slot_used[i]) continue;
             if (!g.snakes[i].alive) continue;
@@ -261,7 +252,6 @@ static void *game_loop(void *arg) {
                        g.pass_through_edges_en);
         }
 
-        // Kolizie
         for (int i = 0; i < MAX_PLAYERS; i++) {
             if (!g.slot_used[i]) continue;
             if (!g.snakes[i].alive) continue;
@@ -274,22 +264,17 @@ static void *game_loop(void *arg) {
             }
         }
 
-        // Ovocie
-        if (fruit_handle_eating(&g.world,
-                                g.snakes,
-                                g.slot_used,
-                                MAX_PLAYERS,
-                                &g.fruit)) {
+        if (fruit_handle_eating(&g.world, g.snakes, g.slot_used, MAX_PLAYERS, &g.fruit)) {
             fruit_sync_locked();
         }
 
-        // Posli stav klientom
         server_message_t state;
         memset(&state, 0, sizeof(state));
-        game_time++;
-        build_state_locked(&state, game_time);
+
+        build_state_locked(&state, g.game.elapsed_time);
 
         pthread_mutex_unlock(&g.lock);
+
         ipc_server_send_state(ctx->ipc, &state);
     }
 
