@@ -1,5 +1,12 @@
 #define _POSIX_C_SOURCE 199309
 
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <time.h>
+
 #include "server.h"
 #include "game.h"
 #include "world.h"
@@ -8,13 +15,6 @@
 #include "fruit.h"
 #include "../common/protocol.h"
 #include "../common/config.h"
-
-#include <pthread.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <time.h>
 
 // Globalny stav servera.
 typedef struct {
@@ -222,7 +222,6 @@ static void sleep_ms(int ms) {
 
 static void *game_loop(void *arg) {
     server_context_t *ctx = (server_context_t *)arg;
-    int game_time = 0;
 
     while (ctx->server->running) {
         sleep_ms(SERVER_TICK_MS);
@@ -271,8 +270,8 @@ static void *game_loop(void *arg) {
 
         server_message_t state;
         memset(&state, 0, sizeof(state));
-        game_time++;
-        build_state_locked(&state, game_time);
+
+        build_state_locked(&state, g.game.elapsed_time);
 
         pthread_mutex_unlock(&g.lock);
 

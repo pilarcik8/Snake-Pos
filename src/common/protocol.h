@@ -33,13 +33,9 @@ typedef struct {
 // Sprava posielana zo servera klientom.
 typedef struct {
     message_type_t type;
-    
-    int assigned_player_id;
     int game_time;
     int player_count;
-
     snake_state_t snakes[MAX_PLAYERS];
-
     int fruit_count;
     position_t fruits[MAX_PLAYERS];
 } server_message_t;

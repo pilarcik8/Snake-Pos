@@ -6,7 +6,6 @@ void game_init(game_t *game) {
     game->elapsed_time = 0;
     game->empty_time = 0;
     game->ms_accum = 0;
-    game->elapsed_time = 0;
     game->running = 1;
     pthread_mutex_init(&game->lock, NULL);
 }
