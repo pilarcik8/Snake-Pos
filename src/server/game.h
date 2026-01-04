@@ -11,7 +11,7 @@ typedef struct {
     int elapsed_time;     // sekundy od štartu hry
     int running;          // 1 = beží, 0 = skončila
     int ms_accum;         // nazbierane ms pre prechod na 1 sekundu
-    int empty_time;       // sekundy bez hráčov
+    int empty_time_ms;    // ms bez hráčov
     
     bool paused;          
 
