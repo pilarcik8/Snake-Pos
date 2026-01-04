@@ -22,7 +22,7 @@ void game_init(game_t *game);
  * @param player_count počet aktuálne pripojených/aktívnych hráčov (neskôr hadíkov)
  * @return 1 ak hra pokračuje, 0 ak hra skončila
  */
-int game_update(game_t *game, int player_count, int delta_ms);
+int game_update(game_t *game, int player_count);
 
 void game_end(game_t *game);
 
