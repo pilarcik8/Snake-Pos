@@ -4,15 +4,13 @@
 
 #include <string.h>
 
-void client_init(client_t *c,
-                 const char *address) {
+void client_init(client_t *c, const char *address, int port) {
     memset(c, 0, sizeof(*c));
-
     c->running = true;
 
     ipc_client_init(&c->ipc);
 
-    if (!ipc_client_connect(&c->ipc, address, 12345)) {
+    if (!ipc_client_connect(&c->ipc, address, port)) {
         c->running = false;
         return;
     }

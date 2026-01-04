@@ -116,21 +116,9 @@ static void fruit_sync_locked(void) {
                &g.fruit);
 }
 
-static void handle_connect_locked(int player_id) {
+static void handle_new_connection_locked(int player_id) {
     int slot = find_slot_by_player_id_locked(player_id);
-
-    if (slot >= 0) {
-        if (!g.snakes[slot].alive) {
-            position_t spawn;
-            if (!pick_spawn_locked(&spawn)) return;
-
-            snake_init(&g.snakes[slot], player_id, spawn);
-            g.snakes[slot].alive = true;
-            g.active_snakes++;
-        }
-        fruit_sync_locked();
-        return;
-    }
+    if (slot >= 0) return;
 
     slot = find_free_slot_locked();
     if (slot < 0) return;
@@ -173,11 +161,6 @@ static void handle_input_locked(int player_id, direction_t dir) {
 
 static void process_client_message_locked(int player_id, 
                                           const client_message_t *msg) {
- if (msg->type == MSG_CONNECT) {
-        handle_connect_locked(player_id);
-        return;
-    }
-
     if (msg->type == MSG_DISCONNECT) {
         handle_disconnect_locked(player_id);
         return;
@@ -294,16 +277,32 @@ static void *ipc_loop(void *arg) {
     server_context_t *ctx = (server_context_t *)arg;
 
     while (ctx->server->running) {
-        ipc_server_accept(ctx->ipc);
 
+        // Najprv spracuj spravy (aj DISCONNECT), aby sa slot neuvolnil neskoro.
         client_message_t msg;
-        int slot = -1;
+        int slot = ipc_server_receive(ctx->ipc, &msg);
 
-        if (ipc_server_receive(ctx->ipc, &msg, &slot)) {
+        if (slot >= 0) {
             int player_id = ctx->ipc->client_player_id[slot];
 
             pthread_mutex_lock(&g.lock);
             process_client_message_locked(player_id, &msg);
+            pthread_mutex_unlock(&g.lock);
+
+            if (msg.type == MSG_DISCONNECT) {
+                pthread_mutex_lock(&ctx->ipc->lock);
+                ctx->ipc->client_player_id[slot] = -1;
+                pthread_mutex_unlock(&ctx->ipc->lock);
+            }
+        }
+
+        // Potom prijmi nove pripojenie a okamzite vytvor hada.
+        int new_slot = ipc_server_accept(ctx->ipc);
+        if (new_slot >= 0) {
+            int new_player_id = ctx->ipc->client_player_id[new_slot];
+
+            pthread_mutex_lock(&g.lock);
+            handle_new_connection_locked(new_player_id);
             pthread_mutex_unlock(&g.lock);
         }
 

@@ -16,9 +16,9 @@ typedef struct {
 } ipc_server_t;
 
 int ipc_server_start(ipc_server_t *ipc, int port);
-void ipc_server_accept(ipc_server_t *ipc);
+int ipc_server_accept(ipc_server_t *ipc);
 
-bool ipc_server_receive(ipc_server_t *ipc, client_message_t *msg, int *out_slot);
+int ipc_server_receive(ipc_server_t *ipc, client_message_t *msg);
 void ipc_server_send_state(ipc_server_t *ipc, server_message_t *state);
 
 #endif

@@ -18,8 +18,7 @@ typedef struct {
 } client_t;
 
 // Inicializuje klienta a pripoji ho na server.
-void client_init(client_t *c,
-                 const char *address);
+void client_init(client_t *c, const char *address, int port);
 
 void client_run(client_t *c);
 void client_shutdown(client_t *c);

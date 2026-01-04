@@ -30,6 +30,14 @@ int ipc_server_start(ipc_server_t *ipc, int port) {
         return -1;
     }
 
+    if (port == 0) {
+      socklen_t alen = sizeof(addr);
+      if (getsockname(ipc->server_fd, (struct sockaddr *)&addr, &alen) == 0) {
+        port = ntohs(addr.sin_port);
+      }
+    }
+
+
     if (listen(ipc->server_fd, MAX_PLAYERS) < 0) {
         perror("listen");
         close(ipc->server_fd);
@@ -50,13 +58,13 @@ int ipc_server_start(ipc_server_t *ipc, int port) {
     return 0;
 }
 
-void ipc_server_accept(ipc_server_t *ipc) {
+int ipc_server_accept(ipc_server_t *ipc) {
     struct sockaddr_in client_addr;
     socklen_t len = sizeof(client_addr);
 
     int client_fd = accept(ipc->server_fd, (struct sockaddr *)&client_addr, &len);
     if (client_fd < 0) {
-        return;
+        return -1;
     }
 
     pthread_mutex_lock(&ipc->lock);
@@ -72,7 +80,7 @@ void ipc_server_accept(ipc_server_t *ipc) {
     if (slot < 0) {
         pthread_mutex_unlock(&ipc->lock);
         close(client_fd);
-        return;
+        return -1;
     }
 
     ipc->client_fds[slot] = client_fd;
@@ -80,9 +88,10 @@ void ipc_server_accept(ipc_server_t *ipc) {
     printf("Client connected (slot %d, id %d)\n", slot, ipc->client_player_id[slot]);
 
     pthread_mutex_unlock(&ipc->lock);
+    return slot;
 }
 
-bool ipc_server_receive(ipc_server_t *ipc, client_message_t *msg, int *out_slot) {
+int ipc_server_receive(ipc_server_t *ipc, client_message_t *msg) {
     pthread_mutex_lock(&ipc->lock);
 
     for (int i = 0; i < MAX_PLAYERS; i++) {
@@ -94,19 +103,20 @@ bool ipc_server_receive(ipc_server_t *ipc, client_message_t *msg, int *out_slot)
         if (r == 0) {
             close(fd);
             ipc->client_fds[i] = 0;
-            ipc->client_player_id[i] = -1;
-            continue;
+
+            msg->type = MSG_DISCONNECT;
+            pthread_mutex_unlock(&ipc->lock);
+            return i; // slot
         }
 
         if (r == (ssize_t)sizeof(*msg)) {
-            *out_slot = i;
             pthread_mutex_unlock(&ipc->lock);
-            return true;
+            return i; // slot
         }
     }
 
     pthread_mutex_unlock(&ipc->lock);
-    return false;
+    return -1; // nič neprišlo
 }
 
 void ipc_server_send_state(ipc_server_t *ipc, server_message_t *state) {
@@ -114,12 +124,18 @@ void ipc_server_send_state(ipc_server_t *ipc, server_message_t *state) {
 
     for (int i = 0; i < MAX_PLAYERS; i++) {
         int fd = ipc->client_fds[i];
-        if (fd > 0) {
-            send(fd, state, sizeof(*state), 0);
+        if (fd <= 0) continue;
+
+        ssize_t w = send(fd, state, sizeof(*state), 0);
+        if (w != (ssize_t)sizeof(*state)) {
+            close(fd);
+            ipc->client_fds[i] = 0;
+            ipc->client_player_id[i] = -1;
         }
     }
 
     pthread_mutex_unlock(&ipc->lock);
 }
+
 
 

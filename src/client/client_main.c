@@ -1,13 +1,18 @@
 #include "client.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 int main(int argc, char **argv) {
-    const char *address = "127.0.0.1";
-    if (argc >= 2) {
-        address = argv[1];
+    if (argc < 3) {
+        printf("Pouzitie: %s <address> <port>\n", argv[0]);
+        return 1;
     }
 
+    const char *address = argv[1];
+    int port = atoi(argv[2]);
+
     client_t client;
-    client_init(&client, address);
+    client_init(&client, address, port);
     client_run(&client);
     client_shutdown(&client);
 
