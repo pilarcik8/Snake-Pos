@@ -12,6 +12,7 @@ typedef struct {
     direction_t direction;
     bool alive;
     int score;
+    bool dir_locked;
 } snake_t;
 
 void snake_init(snake_t *s, int player_id, position_t start);

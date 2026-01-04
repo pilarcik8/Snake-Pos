@@ -17,7 +17,7 @@ static void handle_sigint(int sig) {
 }
 
 int main(int argc, char **argv) {
-    int port = 12345;
+    int port = 0;
     if (argc >= 2) {
         port = atoi(argv[1]);
         if (port < 0 || port > 65535) {

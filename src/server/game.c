@@ -1,13 +1,17 @@
 #include "game.h"
+#include <pthread.h>
 #include <stdio.h>
 
 void game_init(game_t *game) {
+    game->elapsed_time = 0;
+    game->empty_time = 0;
+    game->ms_accum = 0;
     game->elapsed_time = 0;
     game->running = 1;
     pthread_mutex_init(&game->lock, NULL);
 }
 
-int game_update(game_t *game, int player_count) {
+int game_update(game_t *game, int player_count, int delta_ms) {
     pthread_mutex_lock(&game->lock);
 
     if (!game->running) {
@@ -15,28 +19,31 @@ int game_update(game_t *game, int player_count) {
         return 0;
     }
 
-    game->elapsed_time++;
+    game->ms_accum += delta_ms;
+    while (game->ms_accum >= 1000) {
+        game->ms_accum -= 1000;
+        game->elapsed_time += 1;
 
-    /* ----- ČASOVÝ REŽIM ----- */
-    if (game->mode == GAME_TIMED) {
-        if (game->elapsed_time >= game->time_limit) {
-            printf("[GAME] Time limit reached (%d sec)\n", game->time_limit);
-            game->running = 0;
-        }
-    }
-
-    /* ----- ŠTANDARDNÝ REŽIM ----- */
-    if (game->mode == GAME_STANDARD) {
-        static int empty_time = 0; // sekundy bez hráča
-
-        if (player_count == 0) {
-            empty_time++;
-            if (empty_time >= EMPTY_GAME_TIMEOUT_SEC) {
-                printf("[GAME] No players for %d sec -> game over\n", EMPTY_GAME_TIMEOUT_SEC);
+        if (game->mode == GAME_TIMED) {
+            if (game->elapsed_time >= game->time_limit) {
+                printf("[GAME] Time limit reached (%d sec)\n", game->time_limit);
                 game->running = 0;
+                break;
             }
-        } else {
-            empty_time = 0;
+        }
+
+        if (game->mode == GAME_STANDARD) {
+            if (player_count == 0) {
+                game->empty_time++;
+                if (game->empty_time >= EMPTY_GAME_TIMEOUT_SEC) {
+                    printf("[GAME] No players for %d sec -> game over\n", EMPTY_GAME_TIMEOUT_SEC);
+                    game->running = 0;
+                    pthread_mutex_unlock(&game->lock);
+                    return 0;
+                }
+            } else {
+                game->empty_time = 0;
+            }
         }
     }
 

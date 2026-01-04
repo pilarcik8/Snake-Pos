@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 199309
+
 #include "server.h"
 #include "game.h"
 #include "world.h"
@@ -12,6 +14,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 
 // Globalny stav servera.
 typedef struct {
@@ -210,16 +213,23 @@ static void build_state_locked(server_message_t *out, int game_time) {
     }
 }
 
+static void sleep_ms(int ms) {
+    struct timespec ts;
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (long)(ms % 1000) * 1000000L;
+    nanosleep(&ts, NULL);
+}
+
 static void *game_loop(void *arg) {
     server_context_t *ctx = (server_context_t *)arg;
     int game_time = 0;
 
     while (ctx->server->running) {
-        sleep(1);
+        sleep_ms(SERVER_TICK_MS);
 
         pthread_mutex_lock(&g.lock);
 
-        if (!game_update(&g.game, g.active_snakes)) {
+        if (!game_update(&g.game, g.active_snakes, SERVER_TICK_MS)) {
             server_message_t end_msg;
             memset(&end_msg, 0, sizeof(end_msg));
             end_msg.type = MSG_GAME_OVER;

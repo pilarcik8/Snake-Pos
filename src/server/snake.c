@@ -20,7 +20,10 @@ void snake_init(snake_t *s, int player_id, position_t start) {
 void snake_set_direction(snake_t *s, direction_t dir) {
     if (!s->alive) return;
     if (s->length > 1 && is_opposite(s->direction, dir)) return;
+    if (s->dir_locked) return;
+
     s->direction = dir;
+    s->dir_locked = true;
 }
 
 position_t snake_next_head(const snake_t *s) {
@@ -45,6 +48,8 @@ static position_t apply_wrap(position_t p, int w, int h) {
 }
 
 void snake_move(snake_t *s, int world_w, int world_h, bool wrap) {
+    s->dir_locked = false;
+
     if (!s->alive) return;
     if (s->length <= 0) return;
 
