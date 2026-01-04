@@ -305,8 +305,6 @@ static void *ipc_loop(void *arg) {
             handle_new_connection_locked(new_player_id);
             pthread_mutex_unlock(&g.lock);
         }
-
-        sleep(1);
     }
 
     return NULL;

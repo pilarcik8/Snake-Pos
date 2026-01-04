@@ -7,6 +7,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <fcntl.h>
+#include <errno.h>
+
 int ipc_server_start(ipc_server_t *ipc, int port) {
     struct sockaddr_in addr;
 
@@ -37,11 +40,15 @@ int ipc_server_start(ipc_server_t *ipc, int port) {
       }
     }
 
-
     if (listen(ipc->server_fd, MAX_PLAYERS) < 0) {
         perror("listen");
         close(ipc->server_fd);
         return -1;
+    }
+
+    int flags = fcntl(ipc->server_fd, F_GETFL, 0);
+    if (flags >= 0) {
+      fcntl(ipc->server_fd, F_SETFL, flags | O_NONBLOCK);
     }
 
     pthread_mutex_init(&ipc->lock, NULL);
@@ -64,6 +71,7 @@ int ipc_server_accept(ipc_server_t *ipc) {
 
     int client_fd = accept(ipc->server_fd, (struct sockaddr *)&client_addr, &len);
     if (client_fd < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) return -1;
         return -1;
     }
 
@@ -71,10 +79,7 @@ int ipc_server_accept(ipc_server_t *ipc) {
 
     int slot = -1;
     for (int i = 0; i < MAX_PLAYERS; i++) {
-        if (ipc->client_fds[i] == 0) {
-            slot = i;
-            break;
-        }
+        if (ipc->client_fds[i] == 0) { slot = i; break; }
     }
 
     if (slot < 0) {
