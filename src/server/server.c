@@ -170,12 +170,13 @@ static void process_client_message_locked(int player_id,
     }
 
     if (msg->type == MSG_INPUT) {
-        handle_input_locked(player_id, msg->direction);
+        if (!g.game.paused)
+          handle_input_locked(player_id, msg->direction);
         return;
     }
 
     if (msg->type == MSG_PAUSE) {
-        // TODO: Urobit pauzu hraca tak, aby sa jeho had nehybal.
+        game_toggle_pause(&g.game);
         return;
     }
 }
@@ -242,6 +243,19 @@ static void *game_loop(void *arg) {
             break;
         }
 
+            // Ak je pauza, nemeníme svet, len posielame stav (čas sa aj tak nehýbe)
+        if (g.game.paused) {
+            server_message_t state;
+            memset(&state, 0, sizeof(state));
+            build_state_locked(&state, g.game.elapsed_time);
+
+            pthread_mutex_unlock(&g.lock);
+
+            ipc_server_send_state(ctx->ipc, &state);
+            continue;
+        }
+
+        // ---- normálny tick (bez pauzy) ----
         for (int i = 0; i < MAX_PLAYERS; i++) {
             if (!g.slot_used[i]) continue;
             if (!g.snakes[i].alive) continue;

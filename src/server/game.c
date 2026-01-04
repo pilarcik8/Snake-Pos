@@ -3,11 +3,18 @@
 #include <stdio.h>
 
 void game_init(game_t *game) {
-    game->elapsed_time = 0;
-    game->empty_time = 0;
-    game->ms_accum = 0;
-    game->running = 1;
-    pthread_mutex_init(&game->lock, NULL);
+  game->elapsed_time = 0;
+  game->empty_time = 0;
+  game->ms_accum = 0;
+  game->running = 1;
+  game->paused = false;
+  pthread_mutex_init(&game->lock, NULL);
+}
+
+void game_toggle_pause(game_t *game) {
+    pthread_mutex_lock(&game->lock);
+    game->paused = !game->paused;
+    pthread_mutex_unlock(&game->lock);
 }
 
 int game_update(game_t *game, int player_count, int delta_ms) {
@@ -16,6 +23,12 @@ int game_update(game_t *game, int player_count, int delta_ms) {
     if (!game->running) {
         pthread_mutex_unlock(&game->lock);
         return 0;
+    }
+
+    // Počas pauzy čas NEPLYNE a nič sa neodpočítava
+    if (game->paused) {
+        pthread_mutex_unlock(&game->lock);
+        return 1;
     }
 
     /* nazbieraj milisekundy a spracuj celé sekundy */
