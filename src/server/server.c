@@ -41,6 +41,7 @@ typedef struct {
 static global_t g; // Info hry
 
 static server_t *g_server = NULL;
+static ipc_server_t *g_ipc = NULL;
 
 static void globals_init(void) {
   memset(&g, 0, sizeof(g));
@@ -187,6 +188,16 @@ static void start_new_game_locked(const game_config_t *cfg) {
   
   // pod g.lock
   if (g_server) g_server->game_running = true;
+
+  if (g_ipc) {
+    pthread_mutex_lock(&g_ipc->lock);
+    for (int i = 0; i < MAX_PLAYERS; i++) {
+      int pid = g_ipc->client_player_id[i];
+      if (pid != -1) handle_new_connection_locked(pid); // teraz už svet existuje -> spawn hada prejde
+
+      pthread_mutex_unlock(&g_ipc->lock);
+    }
+  }
 }
 
 static void process_client_message_locked(int player_id, const client_message_t *msg) {
@@ -205,7 +216,9 @@ static void process_client_message_locked(int player_id, const client_message_t 
     start_new_game_locked(&msg->cfg);
   }
   else if (msg->type == MSG_CONNECT) {
-    handle_new_connection_locked(player_id);
+    if (g_server && g_server->game_running) {
+        handle_new_connection_locked(player_id);
+    }
   }
 }
 
@@ -275,7 +288,9 @@ static void *game_loop(void *arg) {
       // pošle koniec hry všetkým klientom
       ipc_server_send_state(ctx->ipc, &end_msg);
 
-      ctx->server->running = false;
+      //ctx->server->running = false; TOTO BY VYPLO CELY SERVER
+      
+      g_server->game_running = false; // TOTO KLIENTOV POSLE LEN DO MENU
       break;
     }
 
@@ -327,7 +342,7 @@ static void *game_loop(void *arg) {
   game_end(&g.game);
   pthread_mutex_lock(&g.lock);
   ctx->server->game_running = false;
-  pthread_mutex_lock(&g.lock);
+  pthread_mutex_unlock(&g.lock);
 
   return NULL;
 }
@@ -381,6 +396,8 @@ void server_run(server_t *server, ipc_server_t *ipc) {
 
   //globalna, pointer
   g_server = server;
+  g_ipc = ipc;
+
   server->ipc = ipc;
 
   pthread_create(&server->game_thread, NULL, game_loop, &ctx);
@@ -396,9 +413,3 @@ void server_shutdown(server_t *server) {
   pthread_join(server->game_thread, NULL);
   pthread_join(server->ipc_thread, NULL);
 }
-
-
-
-
-
-
