@@ -6,7 +6,8 @@
 #include "../common/config.h" //pouzite v .c 
 
 typedef struct {
-    game_mode_t mode;
+    game_mode_t mode;     //Standart / Timed
+
     int time_limit;       // len pre GAME_TIMED
     int elapsed_time;     // sekundy od štartu hry
     int running;          // 1 = beží, 0 = skončila
@@ -14,8 +15,6 @@ typedef struct {
     int empty_time_ms;    // ms bez hráčov
     
     bool paused;          
-
-    pthread_mutex_t lock;
 } game_t;
 
 void game_init(game_t *game);
