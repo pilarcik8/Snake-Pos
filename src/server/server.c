@@ -40,6 +40,8 @@ typedef struct {
 
 static global_t g; // Info hry
 
+static server_t server_info;
+
 static void globals_init(void) {
   memset(&g, 0, sizeof(g));
   pthread_mutex_init(&g.lock, NULL);
@@ -366,6 +368,9 @@ void server_run(server_t *server, ipc_server_t *ipc) {
   static server_context_t ctx;
   ctx.server = server;
   ctx.ipc = ipc;
+
+  //globalna
+  server_info = *server; 
 
   server->ipc = ipc;
 
