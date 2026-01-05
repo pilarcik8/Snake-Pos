@@ -7,22 +7,23 @@
 #include "ipc_client.h"
 
 typedef enum {
-    CLIENT_MENU,
-    CLIENT_IN_GAME,
-    CLIENT_EXIT
+  CLIENT_MENU,
+  CLIENT_IN_GAME,
+  CLIENT_EXIT
 } client_state_t;
 
 typedef struct {
-    ipc_client_t ipc;
+  ipc_client_t ipc;
 
-    int player_id;
-    bool running;
+  int player_id;
+  bool running;   //true - klient bezi, false - klient sa ma ukoncit
 
-    client_state_t state;
+  client_state_t state;
+  bool paused;
 
-    bool in_game_threads_started;
-    pthread_t input_thread;
-    pthread_t render_thread;
+  bool in_game_threads_started;
+  pthread_t input_thread;
+  pthread_t render_thread;
 } client_t;
 
 // Inicializuje klienta a pripoji ho na server.

@@ -37,56 +37,46 @@ static int menu_read_choice(void) {
   return c;
 }
 
+static void send_connect(client_t *c) {
+  client_message_t msg;
+  msg.type = MSG_CONNECT;
+  msg.direction = RIGHT; // ignoruj na serveri pri CONNECT
+  ipc_client_send(&c->ipc, &msg);
+}
+
 void client_run(client_t *c) {
   if (!c->running) return;
-
-  c->state = CLIENT_MENU;
-  c->in_game_threads_started = false;
 
   while (c->running && c->state != CLIENT_EXIT) {
     if (c->state == CLIENT_MENU) {
       int choice = menu_read_choice();
 
       if (choice == 1 || choice == 2) {
-        client_message_t msg;
-        msg.type = MSG_CONNECT;
-        msg.direction = RIGHT;
-        ipc_client_send(&c->ipc, &msg);
-
-        if (!c->in_game_threads_started) {
-          c->in_game_threads_started = true;
-          pthread_create(&c->input_thread, NULL, input_thread_main, c);
-          pthread_create(&c->render_thread, NULL, render_thread_main, c);
-        }
+        send_connect(c);
 
         c->state = CLIENT_IN_GAME;
+        c->paused = false;
+
+        pthread_create(&c->input_thread, NULL, input_thread_main, c);
+        pthread_create(&c->render_thread, NULL, render_thread_main, c);
+
+        pthread_join(c->input_thread, NULL);
+        pthread_join(c->render_thread, NULL);
+
+        // keď thready skončia, vráť sa do menu (ak klient ešte beží)
+        if (c->running) c->state = CLIENT_MENU;
       } 
       else if (choice == 3) {
-        // zatiaľ iba prepneme stav 
-        c->state = CLIENT_IN_GAME;
+        // zatiaľ iba “pokračovať” = nič (reálne to bude resume po pauze)
+        printf("Nemas pauznutu hru.\n");
       } 
       else if (choice == 4) {
         c->state = CLIENT_EXIT;
         c->running = false;
-      } 
-      else {
-        printf("Neplatna volba.\n");
       }
     }
-
-    if (c->state == CLIENT_IN_GAME) {
-      // nič nerob – input/render thready bežia
-      // do menu sa dostaneme tak, že input thread nastaví c->state = CLIENT_MENU pri 'p'
-      sleep(1);
-    }
-  }
-
-  if (c->in_game_threads_started) {
-    pthread_join(c->input_thread, NULL);
-    pthread_join(c->render_thread, NULL);
   }
 }
-
 
 void client_shutdown(client_t *c) {
   if (!c->running) return;
