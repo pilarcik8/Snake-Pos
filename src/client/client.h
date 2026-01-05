@@ -6,13 +6,21 @@
 
 #include "ipc_client.h"
 
-// Stav klienta.
+typedef enum {
+    CLIENT_MENU,
+    CLIENT_IN_GAME,
+    CLIENT_EXIT
+} client_state_t;
+
 typedef struct {
     ipc_client_t ipc;
 
     int player_id;
     bool running;
 
+    client_state_t state;
+
+    bool in_game_threads_started;
     pthread_t input_thread;
     pthread_t render_thread;
 } client_t;

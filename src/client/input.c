@@ -58,9 +58,10 @@ void *input_thread_main(void *arg) {
         if (key == 'p') {
             client_message_t msg;
             msg.type = MSG_PAUSE;
-            msg.direction = RIGHT;
+            msg.direction = RIGHT; //nepouzivame na strane servera
 
             ipc_client_send(&c->ipc, &msg);
+            c->state = CLIENT_MENU;
             continue;
         }
 
