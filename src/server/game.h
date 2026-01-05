@@ -6,14 +6,14 @@
 #include "../common/config.h" //pouzite v .c 
 
 typedef struct {
-    game_mode_t mode;     //Standart / Timed
+    game_mode_t mode;     // GAME_STANDARD / GAME_TIMED
+    int time_limit_sec;   // pre GAME_TIMED
 
-    int time_limit;       // len pre GAME_TIMED
-    int elapsed_time;     // sekundy od štartu hry
-    int running;          // 1 = beží, 0 = skončila
+    int elapsed_time_sec; // od štartu hry
     int ms_accum;         // nazbierane ms pre prechod na 1 sekundu
     int empty_time_ms;    // ms bez hráčov
     
+    bool running;          
     bool paused;          
 } game_t;
 
@@ -21,6 +21,7 @@ void game_init(game_t *game);
 
 /**
  * Aktualizuje stav hry podľa delta_ms (SERVER_TICK_MS).
+ * ret: 1 - pokracuje, 0 - koniec
  */
 int game_update(game_t *game, int player_count, int delta_ms);
 

@@ -15,7 +15,7 @@ static void draw_state(const server_message_t *st) {
     printf("WASD pohyb | p pauza | q odchod\n\n");
 
     // rozmery sveta (zatiaľ natvrdo ako na serveri: 30x20)
-    // ak to neskôr pošleš v správe, tak to len nahradíš
+    // DOCASTNE - ak to neskôr pošleš v správe, tak to len nahradíš
     const int W = 30;
     const int H = 20;
 

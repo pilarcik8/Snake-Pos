@@ -12,7 +12,7 @@ typedef struct {
 } server_t;
 
 
-void server_init(server_t *server);
+void server_init(server_t *server, game_mode_t mode, int time_limit_sec);
 void server_run(server_t *server, ipc_server_t *ipc);
 void server_shutdown(server_t *server);
 

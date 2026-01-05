@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 199309
+#define _POSIX_C_SOURCE 199309 //pre čas
 
 #include <pthread.h>
 #include <unistd.h>
@@ -38,7 +38,7 @@ typedef struct {
   ipc_server_t *ipc;
 } server_context_t;
 
-static global_t g; // info hry
+static global_t g; // Info hry
 
 static void globals_init(void) {
   memset(&g, 0, sizeof(g));
@@ -90,7 +90,7 @@ static bool position_taken_by_any_snake_locked(int x, int y) {
   return false;
 }
 
-// Vyberie nahodne volne policko pre spawn.
+// vyberie nahodne volne policko pre spawn.
 static bool pick_spawn_locked(position_t *out) {
   if (g.world.width <= 0 || g.world.height <= 0) return false;
 
@@ -221,7 +221,7 @@ static void *game_loop(void *arg) {
       server_message_t end_msg;
       memset(&end_msg, 0, sizeof(end_msg));
       end_msg.type = MSG_GAME_OVER;
-      end_msg.game_time = g.game.elapsed_time;
+      end_msg.game_time = g.game.elapsed_time_sec;
       end_msg.player_count = g.active_snakes;
 
       pthread_mutex_unlock(&g.lock);
@@ -239,7 +239,7 @@ static void *game_loop(void *arg) {
       memset(&state, 0, sizeof(state));
 
       // do správy dáme aktuálny čas hry + všetky entity
-      build_state_locked(&state, g.game.elapsed_time);
+      build_state_locked(&state, g.game.elapsed_time_sec);
 
       pthread_mutex_unlock(&g.lock);
       ipc_server_send_state(ctx->ipc, &state);
@@ -271,7 +271,7 @@ static void *game_loop(void *arg) {
     // stav na odoslanie (čas = g.game.elapsed_time!)
     server_message_t state;
     memset(&state, 0, sizeof(state));
-    build_state_locked(&state, g.game.elapsed_time);
+    build_state_locked(&state, g.game.elapsed_time_sec);
 
     // odomkni globálny stav a pošli update klientom
     pthread_mutex_unlock(&g.lock);
@@ -317,18 +317,18 @@ static void *ipc_loop(void *arg) {
   return NULL;
 }
 
-void server_init(server_t *server) {
+void server_init(server_t *server, game_mode_t mode, int time_limit_sec) {
   server->running = true;
 
   globals_init();
-
-  g.game.mode = GAME_STANDARD;
-  g.game.time_limit = 60;
+  //DOCASTNE HARD CODED
+  g.game.mode = mode;
+  g.game.time_limit_sec = time_limit_sec;
   game_init(&g.game);
 
-  world_init(&g.world, 30, 20);
-  world_generate(&g.world, WORLD_NO_OBSTACLES, 0);
-  g.pass_through_edges_en = true;
+  world_init(&g.world, 30, 20); //TODO: ZMEN NA NIE HARD CODED
+  world_generate(&g.world, WORLD_NO_OBSTACLES, 0); //TODO: ZMEN NA NIE HARD CODED
+  g.pass_through_edges_en = true; //TODO: ZMEN NA NIE HARD CODED
 
   fruit_sync_locked();
 
