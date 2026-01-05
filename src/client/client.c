@@ -40,7 +40,7 @@ static int menu_read_choice(void) {
 static void send_connect(client_t *c) {
   client_message_t msg;
   msg.type = MSG_CONNECT;
-  msg.direction = RIGHT; // ignoruj na serveri pri CONNECT
+  msg.direction = RIGHT;
   ipc_client_send(&c->ipc, &msg);
 }
 

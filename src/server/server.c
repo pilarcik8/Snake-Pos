@@ -173,6 +173,7 @@ static void start_new_game_locked(const game_config_t *cfg) {
   g.game.mode = cfg->mode;
   g.game.time_limit_sec = cfg->time_limit_sec;
   game_init(&g.game);
+  g.game.paused = false;
 
   // nastav world
   world_init(&g.world, cfg->width, cfg->height);
@@ -202,6 +203,9 @@ static void process_client_message_locked(int player_id, const client_message_t 
   }
   else if (msg->type == MSG_CREATE_GAME) {
     start_new_game_locked(&msg->cfg);
+  }
+  else if (msg->type == MSG_CONNECT) {
+    handle_new_connection_locked(player_id);
   }
 }
 
@@ -321,10 +325,9 @@ static void *game_loop(void *arg) {
   }
 
   game_end(&g.game);
-  ctx->server->game_running = false;
   pthread_mutex_lock(&g.lock);
   ctx->server->game_running = false;
-  pthread_mutex_unlock(&g.lock);
+  pthread_mutex_lock(&g.lock);
 
   return NULL;
 }
