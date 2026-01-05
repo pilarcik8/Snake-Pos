@@ -138,7 +138,7 @@ static bool generate_obstacles_connected(world_t *w, int obstacle_percent) {
     return false;
 }
 
-bool world_generate(world_t *w, world_kind_t kind, int obstacle_percent) {
+bool world_generate(world_t *w, world_type_t kind, int obstacle_percent) {
     if (!w) return false;
 
     if (kind == WORLD_NO_OBSTACLES) {

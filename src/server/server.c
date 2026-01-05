@@ -155,6 +155,34 @@ static void handle_input_locked(int player_id, direction_t dir) {
   snake_set_direction(&g.snakes[slot], dir);
 }
 
+static void start_new_game_locked(const game_config_t *cfg) {
+  // reset hry
+  g.active_snakes = 0;
+  for (int i = 0; i < MAX_PLAYERS; i++) {
+    g.slot_used[i] = false;
+    g.snakes[i].alive = false;
+    g.snakes[i].player_id = -1;
+    g.snakes[i].length = 0;
+    g.snakes[i].score = 0;
+  }
+  fruit_init(&g.fruit);
+
+  // nastav game
+  g.game.mode = cfg->mode;
+  g.game.time_limit_sec = cfg->time_limit_sec;
+  game_init(&g.game);
+
+  // nastav world
+  world_init(&g.world, cfg->width, cfg->height);
+  if (cfg->world_type == WORLD_NO_OBSTACLES) {
+    world_generate(&g.world, WORLD_NO_OBSTACLES, 0);
+    g.pass_through_edges_en = true;
+  } else {
+    world_generate(&g.world, WORLD_WITH_OBSTACLES, 20); // napr. 20%
+    g.pass_through_edges_en = false; // pri prekážkach typicky bez wrapu
+  }
+}
+
 static void process_client_message_locked(int player_id, const client_message_t *msg) {
   if (msg->type == MSG_DISCONNECT) {
     handle_disconnect_locked(player_id);
@@ -167,16 +195,19 @@ static void process_client_message_locked(int player_id, const client_message_t 
   else if (msg->type == MSG_PAUSE) {
     game_toggle_pause(&g.game);
   }
+  else if (msg->type == MSG_CREATE_GAME) {
+    start_new_game_locked(&msg->cfg);
+  }
 }
 
 static void kill_snake_locked(int idx) {
-    if (!g.slot_used[idx]) return;
-    if (!g.snakes[idx].alive) return;
+  if (!g.slot_used[idx]) return;
+  if (!g.snakes[idx].alive) return;
 
-    g.snakes[idx].alive = false;
-    if (g.active_snakes > 0) g.active_snakes--;
+  g.snakes[idx].alive = false;
+  if (g.active_snakes > 0) g.active_snakes--;
 
-    fruit_sync_locked();
+  fruit_sync_locked();
     // TODO: Urobit zapis bodov a casu hada po vypadnuti hraca.
 }
 
@@ -213,8 +244,14 @@ static void *game_loop(void *arg) {
   server_context_t *ctx = (server_context_t *)arg;
 
   while (ctx->server->running) {
-    sleep_ms(SERVER_TICK_MS); //čaká na tick
+    sleep_ms(SERVER_TICK_MS); // TICK
     pthread_mutex_lock(&g.lock);
+    
+    // hrac este nevytvoril hru
+     if (!ctx->server->game_running) {
+        pthread_mutex_unlock(&g.lock);
+        continue;
+    }
 
     // koniec hry
     if (!game_update(&g.game, g.active_snakes, SERVER_TICK_MS)) {
@@ -279,6 +316,7 @@ static void *game_loop(void *arg) {
   }
 
   game_end(&g.game);
+  ctx->server->game_running = false;
   return NULL;
 }
 
@@ -317,23 +355,11 @@ static void *ipc_loop(void *arg) {
   return NULL;
 }
 
-void server_init(server_t *server, game_mode_t mode, int time_limit_sec) {
+void server_init(server_t *server) {
   server->running = true;
+  server->game_running = false;
 
   globals_init();
-  //DOCASTNE HARD CODED
-  g.game.mode = mode;
-  g.game.time_limit_sec = time_limit_sec;
-  game_init(&g.game);
-
-  world_init(&g.world, 30, 20); //TODO: ZMEN NA NIE HARD CODED
-  world_generate(&g.world, WORLD_NO_OBSTACLES, 0); //TODO: ZMEN NA NIE HARD CODED
-  g.pass_through_edges_en = true; //TODO: ZMEN NA NIE HARD CODED
-
-  fruit_sync_locked();
-
-  // TODO: Urobit nacitanie sveta zo suboru alebo generovanie prekazok.
-  // TODO: Urobit nastavenie herneho rezimu a casu podla menu.
 }
 
 void server_run(server_t *server, ipc_server_t *ipc) {
@@ -356,5 +382,9 @@ void server_shutdown(server_t *server) {
   pthread_join(server->game_thread, NULL);
   pthread_join(server->ipc_thread, NULL);
 }
+
+
+
+
 
 

@@ -5,11 +5,6 @@
 #include "../common/types.h"
 #include "../common/config.h"
 
-typedef enum {
-    WORLD_NO_OBSTACLES = 0,
-    WORLD_WITH_OBSTACLES = 1
-} world_kind_t;
-
 typedef struct {
     int width;
     int height;
@@ -20,7 +15,7 @@ typedef struct {
 bool world_init(world_t *w, int width, int height);
 
 /* generovanie sveta (bez prekážok / s prekážkami) */
-bool world_generate(world_t *w, world_kind_t kind, int obstacle_percent);
+bool world_generate(world_t *w, world_type_t kind, int obstacle_percent);
 
 /* načítanie sveta zo súboru (ASCII mapa: '#' stena, '.' prázdne) */
 bool world_load_from_file(world_t *w, const char *path);

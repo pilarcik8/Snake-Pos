@@ -28,5 +28,10 @@ typedef struct {
     int y;
 } position_t;
 
+typedef enum {
+    WORLD_NO_OBSTACLES = 0,
+    WORLD_WITH_OBSTACLES = 1
+} world_type_t;
+
 #endif
 

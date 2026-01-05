@@ -44,6 +44,41 @@ static void send_connect(client_t *c) {
   ipc_client_send(&c->ipc, &msg);
 }
 
+void client_shutdown(client_t *c) {
+  if (!c->running) return;
+
+  client_message_t msg;
+  msg.type = MSG_DISCONNECT;
+  msg.direction = RIGHT;
+
+  ipc_client_send(&c->ipc, &msg);
+  ipc_client_close(&c->ipc);
+}
+/*
+// LEN DOCASNA
+static void client_create_game(client_t *c) {
+  client_message_t msg;
+  memset(&msg, 0, sizeof(msg));
+
+  msg.type = MSG_CREATE_GAME;
+
+  // --- KONFIGURÁCIA HRY ---
+  msg.cfg.mode = GAME_STANDARD;          // alebo GAME_TIMED
+  msg.cfg.time_limit_sec = 0;            // napr. 60 pri timed
+  msg.cfg.world_type = WORLD_NO_OBSTACLES;
+  msg.cfg.width = 30;
+  msg.cfg.height = 20;
+
+  ipc_client_send(&c->ipc, &msg);
+}
+*/
+static void send_create_game(client_t *c) {
+    client_message_t msg;
+    memset(&msg, 0, sizeof(msg));
+    msg.type = MSG_CREATE_GAME;  // musíš mať v protokole
+    ipc_client_send(&c->ipc, &msg);
+}
+
 void client_run(client_t *c) {
   if (!c->running) return;
 
@@ -51,8 +86,9 @@ void client_run(client_t *c) {
     if (c->state == CLIENT_MENU) {
       int choice = menu_read_choice();
 
-      if (choice == 1 || choice == 2) {
-        send_connect(c);
+      if (choice == 1) {
+        send_create_game(c);  
+        send_connect(c);       
 
         c->state = CLIENT_IN_GAME;
         c->paused = false;
@@ -62,10 +98,10 @@ void client_run(client_t *c) {
 
         pthread_join(c->input_thread, NULL);
         pthread_join(c->render_thread, NULL);
-
-        // keď thready skončia, vráť sa do menu (ak klient ešte beží)
+        
+        // hra skoncila ale server ide -> menu
         if (c->running) c->state = CLIENT_MENU;
-      } 
+      }
       else if (choice == 3) {
         // zatiaľ iba “pokračovať” = nič (reálne to bude resume po pauze)
         printf("Nemas pauznutu hru.\n");
@@ -78,15 +114,6 @@ void client_run(client_t *c) {
   }
 }
 
-void client_shutdown(client_t *c) {
-  if (!c->running) return;
 
-  client_message_t msg;
-  msg.type = MSG_DISCONNECT;
-  msg.direction = RIGHT;
-
-  ipc_client_send(&c->ipc, &msg);
-  ipc_client_close(&c->ipc);
-}
 
 
