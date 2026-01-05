@@ -40,7 +40,7 @@ typedef struct {
 
 static global_t g; // Info hry
 
-static server_t server_info;
+static server_t *g_server = NULL;
 
 static void globals_init(void) {
   memset(&g, 0, sizeof(g));
@@ -182,7 +182,10 @@ static void start_new_game_locked(const game_config_t *cfg) {
   } else {
     world_generate(&g.world, WORLD_WITH_OBSTACLES, 20); // napr. 20%
     g.pass_through_edges_en = false; // pri prekážkach typicky bez wrapu
-  }
+  } 
+  
+  // pod g.lock
+  if (g_server) g_server->game_running = true;
 }
 
 static void process_client_message_locked(int player_id, const client_message_t *msg) {
@@ -319,6 +322,10 @@ static void *game_loop(void *arg) {
 
   game_end(&g.game);
   ctx->server->game_running = false;
+  pthread_mutex_lock(&g.lock);
+  ctx->server->game_running = false;
+  pthread_mutex_unlock(&g.lock);
+
   return NULL;
 }
 
@@ -369,9 +376,8 @@ void server_run(server_t *server, ipc_server_t *ipc) {
   ctx.server = server;
   ctx.ipc = ipc;
 
-  //globalna
-  server_info = *server; 
-
+  //globalna, pointer
+  g_server = server;
   server->ipc = ipc;
 
   pthread_create(&server->game_thread, NULL, game_loop, &ctx);
