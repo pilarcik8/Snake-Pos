@@ -159,6 +159,9 @@ static void handle_input_locked(int player_id, direction_t dir) {
 }
 
 static void start_new_game_locked(const game_config_t *cfg) {
+  // KVOLI DOCASTNEMU KODU INDE
+  if (cfg->width <= 0 || cfg->height <= 0) return;
+
   // reset hry
   g.active_snakes = 0;
   for (int i = 0; i < MAX_PLAYERS; i++) {

@@ -54,28 +54,18 @@ void client_shutdown(client_t *c) {
   ipc_client_send(&c->ipc, &msg);
   ipc_client_close(&c->ipc);
 }
-/*
-// LEN DOCASNA
-static void client_create_game(client_t *c) {
-  client_message_t msg;
-  memset(&msg, 0, sizeof(msg));
 
-  msg.type = MSG_CREATE_GAME;
-
-  // --- KONFIGURÁCIA HRY ---
-  msg.cfg.mode = GAME_STANDARD;          // alebo GAME_TIMED
-  msg.cfg.time_limit_sec = 0;            // napr. 60 pri timed
-  msg.cfg.world_type = WORLD_NO_OBSTACLES;
-  msg.cfg.width = 30;
-  msg.cfg.height = 20;
-
-  ipc_client_send(&c->ipc, &msg);
-}
-*/
 static void send_create_game(client_t *c) {
     client_message_t msg;
     memset(&msg, 0, sizeof(msg));
-    msg.type = MSG_CREATE_GAME;  // musíš mať v protokole
+    msg.type = MSG_CREATE_GAME;
+
+    msg.cfg.mode = GAME_STANDARD;
+    msg.cfg.time_limit_sec = 0;
+    msg.cfg.world_type = WORLD_NO_OBSTACLES;
+    msg.cfg.width = 30;
+    msg.cfg.height = 20;
+
     ipc_client_send(&c->ipc, &msg);
 }
 
