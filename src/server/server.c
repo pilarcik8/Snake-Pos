@@ -150,6 +150,7 @@ static void handle_disconnect_locked(int player_id) {
   fruit_sync_locked();
 }
 
+// ovladanie hracom
 static void handle_input_locked(int player_id, direction_t dir) {
   int slot = find_slot_by_player_id_locked(player_id);
   if (slot < 0) return;
@@ -158,8 +159,8 @@ static void handle_input_locked(int player_id, direction_t dir) {
   snake_set_direction(&g.snakes[slot], dir);
 }
 
+// nova hra
 static void start_new_game_locked(const game_config_t *cfg) {
-  // KVOLI DOCASTNEMU KODU INDE
   if (cfg->width <= 0 || cfg->height <= 0) return;
 
   // reset hry
@@ -197,9 +198,8 @@ static void start_new_game_locked(const game_config_t *cfg) {
     for (int i = 0; i < MAX_PLAYERS; i++) {
       int pid = g_ipc->client_player_id[i];
       if (pid != -1) handle_new_connection_locked(pid); // teraz už svet existuje -> spawn hada prejde
-
-      pthread_mutex_unlock(&g_ipc->lock);
     }
+    pthread_mutex_unlock(&g_ipc->lock);
   }
 }
 
@@ -371,7 +371,7 @@ static void *ipc_loop(void *arg) {
         pthread_mutex_unlock(&ctx->ipc->lock);
       }
     }
-
+    
     // potom prijme nove pripojenie a vytvori hada
     int new_slot = ipc_server_accept(ctx->ipc);
     if (new_slot >= 0) {
@@ -385,6 +385,7 @@ static void *ipc_loop(void *arg) {
   return NULL;
 }
 
+// inicializacia
 void server_init(server_t *server) {
   server->running = true;
   server->game_running = false;
@@ -392,6 +393,7 @@ void server_init(server_t *server) {
   globals_init();
 }
 
+// spustenie vlakien
 void server_run(server_t *server, ipc_server_t *ipc) {
   static server_context_t ctx;
   ctx.server = server;
@@ -406,7 +408,6 @@ void server_run(server_t *server, ipc_server_t *ipc) {
   pthread_create(&server->game_thread, NULL, game_loop, &ctx);
   pthread_create(&server->ipc_thread, NULL, ipc_loop, &ctx);
 }
-
 
 void server_shutdown(server_t *server) {
   server->running = false;

@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include "../common/types.h"
-#include "../common/config.h" //pouzite v .c 
 
 typedef struct {
     game_mode_t mode;     // GAME_STANDARD / GAME_TIMED
@@ -13,14 +12,16 @@ typedef struct {
     int ms_accum;         // nazbierane ms pre prechod na 1 sekundu
     int empty_time_ms;    // ms bez hráčov
     
+    bool allowed_multiplayer;
+
     bool running;          
-    bool paused;          
+    bool paused;
 } game_t;
 
 void game_init(game_t *game);
 
 /**
- * Aktualizuje stav hry podľa delta_ms (SERVER_TICK_MS).
+ * aktualizuje stav hry podľa delta_ms (SERVER_TICK_MS).
  * ret: 1 - pokracuje, 0 - koniec
  */
 int game_update(game_t *game, int player_count, int delta_ms);

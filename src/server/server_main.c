@@ -52,7 +52,8 @@ int main(int argc, char **argv) {
   // pockaj na vlakna (server_shutdown v SIGINT ich korektne ukonci)
   pthread_join(server.game_thread, NULL);
   pthread_join(server.ipc_thread, NULL);
-
+  
+  printf("\n[SERVER] Treads down...\n");
   return 0;
 }
 

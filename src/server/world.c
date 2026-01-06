@@ -5,108 +5,108 @@
 #include <time.h>
 
 bool world_in_bounds(const world_t *w, int x, int y) {
-    return x >= 0 && x < w->width && y >= 0 && y < w->height;
+  return x >= 0 && x < w->width && y >= 0 && y < w->height;
 }
 
 bool world_is_free(const world_t *w, int x, int y) {
-    return world_in_bounds(w, x, y) && w->cells[y][x] == CELL_EMPTY;
+  return world_in_bounds(w, x, y) && w->cells[y][x] == CELL_EMPTY;
 }
 
 bool world_set_cell(world_t *w, int x, int y, cell_t c) {
-    if (!world_in_bounds(w, x, y)) return false;
-    w->cells[y][x] = c;
-    return true;
+  if (!world_in_bounds(w, x, y)) return false;
+  w->cells[y][x] = c;
+  return true;
 }
 
 static void world_clear(world_t *w) {
-    for (int y = 0; y < w->height; y++) {
-        for (int x = 0; x < w->width; x++) {
-            w->cells[y][x] = CELL_EMPTY;
-        }
+  for (int y = 0; y < w->height; y++) {
+    for (int x = 0; x < w->width; x++) {
+      w->cells[y][x] = CELL_EMPTY;
     }
+  }
 }
 
 bool world_init(world_t *w, int width, int height) {
-    if (!w) return false;
-    if (width <= 0 || height <= 0) return false;
-    if (width > MAX_WORLD_WIDTH || height > MAX_WORLD_HEIGHT) return false;
+  if (!w) return false;
+  if (width <= 0 || height <= 0) return false;
+  if (width > MAX_WORLD_WIDTH || height > MAX_WORLD_HEIGHT) return false;
 
-    w->width = width;
-    w->height = height;
-    world_clear(w);
+  w->width = width;
+  w->height = height;
+  world_clear(w);
 
-    static int seeded = 0;
-    if (!seeded) {
-        seeded = 1;
-        srand((unsigned)time(NULL));
-    }
+  static int seeded = 0;
+  if (!seeded) {
+    seeded = 1;
+    srand((unsigned)time(NULL));
+  }
 
-    return true;
+  return true;
 }
 
-/* ---- Povinné: dosiahnuteľnosť všetkých voľných polí pri náhodných prekážkach ---- */
+// dosiahnuteľnosť všetkých voľných polí pri náhodných prekážkach
 
 static bool find_any_empty(const world_t *w, int *sx, int *sy) {
-    for (int y = 0; y < w->height; y++) {
-        for (int x = 0; x < w->width; x++) {
-            if (w->cells[y][x] == CELL_EMPTY) {
-                *sx = x; *sy = y;
-                return true;
-            }
-        }
+  for (int y = 0; y < w->height; y++) {
+    for (int x = 0; x < w->width; x++) {
+      if (w->cells[y][x] == CELL_EMPTY) {
+        *sx = x; *sy = y;
+          return true;
+      }
     }
-    return false;
+  }
+  return false;
 }
 
 static bool all_empty_reachable(const world_t *w) {
-    int sx, sy;
-    if (!find_any_empty(w, &sx, &sy)) return false;
+  int sx, sy;
+  if (!find_any_empty(w, &sx, &sy)) return false;
 
-    const int maxn = MAX_WORLD_WIDTH * MAX_WORLD_HEIGHT;
-    unsigned char visited[maxn];
-    memset(visited, 0, sizeof(visited));
+  const int maxn = MAX_WORLD_WIDTH * MAX_WORLD_HEIGHT;
+  unsigned char visited[maxn];
+  memset(visited, 0, sizeof(visited));
 
-    int qx[maxn];
-    int qy[maxn];
-    int qh = 0, qt = 0;
+  int qx[maxn];
+  int qy[maxn];
+  int qh = 0, qt = 0;
 
-    #define IDX(xx, yy) ((yy) * w->width + (xx))
+  #define IDX(xx, yy) ((yy) * w->width + (xx))
 
-    visited[IDX(sx, sy)] = 1;
-    qx[qt] = sx; qy[qt] = sy; qt++;
+  visited[IDX(sx, sy)] = 1;
+  qx[qt] = sx; qy[qt] = sy; qt++;
 
-    static const int dx[4] = { 1, -1, 0, 0 };
-    static const int dy[4] = { 0, 0, 1, -1 };
+  static const int dx[4] = { 1, -1, 0, 0 };
+  static const int dy[4] = { 0, 0, 1, -1 };
 
-    while (qh < qt) {
-        int x = qx[qh];
-        int y = qy[qh];
-        qh++;
+  while (qh < qt) {
+    int x = qx[qh];
+    int y = qy[qh];
+    qh++;
 
-        for (int k = 0; k < 4; k++) {
-            int nx = x + dx[k];
-            int ny = y + dy[k];
-            if (!world_in_bounds(w, nx, ny)) continue;
-            if (w->cells[ny][nx] != CELL_EMPTY) continue;
+    for (int k = 0; k < 4; k++) {
+      int nx = x + dx[k];
+      int ny = y + dy[k];
+      if (!world_in_bounds(w, nx, ny)) continue;
+      if (w->cells[ny][nx] != CELL_EMPTY) continue;
 
-            int id = IDX(nx, ny);
-            if (!visited[id]) {
-                visited[id] = 1;
-                qx[qt] = nx; qy[qt] = ny; qt++;
-            }
-        }
+      int id = IDX(nx, ny);
+      if (!visited[id]) {
+        visited[id] = 1;
+        qx[qt] = nx; qy[qt] = ny; qt++;
+      }
     }
+  }
 
-    for (int y = 0; y < w->height; y++) {
-        for (int x = 0; x < w->width; x++) {
-            if (w->cells[y][x] == CELL_EMPTY) {
-                if (!visited[IDX(x, y)]) return false;
-            }
-        }
+  for (int y = 0; y < w->height; y++) {
+    for (int x = 0; x < w->width; x++) {
+      if (w->cells[y][x] == CELL_EMPTY) {
+        if (!visited[IDX(x, y)]) return false;
+      }
     }
+  }
 
-    #undef IDX
-    return true;
+  #undef IDX
+  return true;
 }
 
 static bool generate_obstacles_connected(world_t *w, int obstacle_percent) {

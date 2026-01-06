@@ -19,11 +19,12 @@ typedef enum {
 } message_type_t;
 
 typedef struct {
-    game_mode_t mode;         // GAME_STANDARD / GAME_TIMED
-    int time_limit_sec;       // len ak TIMED (inak 0)
-    world_type_t world_type;  // bez/so prekážkami
-    int width;                // rozmery (ak nenačítavaš zo súboru)
-    int height;
+  game_mode_t mode;         // GAME_STANDARD / GAME_TIMED
+  int time_limit_sec;       // len ak TIMED (inak 0)
+  world_type_t world_type;  // bez/so prekážkami
+  int width;                // rozmery (ak nenačítavaš zo súboru)
+  int height;
+  bool allowed_multiplayer;
 } game_config_t;
 
 // Sprava posielana z klienta na server TODO: rozdel spravy na dve
@@ -45,19 +46,19 @@ typedef struct {
 
 // Sprava posielana zo servera klientom TODO: Vytvorit ACK messege
 typedef struct {
-    message_type_t type;
-    int game_time;
-    int player_count;
+  message_type_t type;
+  int game_time;
+  int player_count;
 
-    int assigned_player_id;
+  int assigned_player_id;
 
-    // ACK info
-    int ok;             // 1=ok, 0=fail
-    int err_code;       // 0=ok, inak dôvod
+  // ACK info
+  int ok;             // 1=ok, 0=fail
+  int err_code;       // 0=ok, inak dôvod
 
-    snake_state_t snakes[MAX_PLAYERS];
-    int fruit_count;
-    position_t fruits[MAX_PLAYERS];
+  snake_state_t snakes[MAX_PLAYERS];
+  int fruit_count;
+  position_t fruits[MAX_PLAYERS];
 } server_message_t;
 
 #endif

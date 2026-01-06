@@ -21,9 +21,9 @@ void client_init(client_t *c, const char *address, int port) {
 static int menu_read_choice(void) {
   int c = 0;
   printf("\n=== MENU ===\n");
-  printf("1) Nova hra (zatim iba connect)\n");
+  printf("1) Nova hra\n");
   printf("2) Pripojit sa k hre\n");
-  printf("3) Pokracovat (ak si pauzol)\n");
+  printf("3) Pokracovat\n");
   printf("4) Koniec\n");
   printf("> ");
   fflush(stdout);
@@ -56,17 +56,74 @@ void client_shutdown(client_t *c) {
 }
 
 static void send_create_game(client_t *c) {
-    client_message_t msg;
-    memset(&msg, 0, sizeof(msg));
-    msg.type = MSG_CREATE_GAME;
+  client_message_t msg;
+  memset(&msg, 0, sizeof(msg));
+  msg.type = MSG_CREATE_GAME;
+    
+  char input = ' ';
+  int time_limit_sec = 0;
 
-    msg.cfg.mode = GAME_STANDARD;
-    msg.cfg.time_limit_sec = 0;
+ 
+  printf("Choose game mode:\n");
+  printf("s) Standart\n");
+  printf("t) Timed\n");
+  while (input != 's' && input != 't') {
+
+    input = getchar();
+  }
+
+  msg.cfg.mode = GAME_STANDARD;
+  if (input == 't') {
+    msg.cfg.mode = GAME_TIMED;
+    
+    printf("Write time limit in seconds:\n");
+    while (time_limit_sec <= 0) {
+      scanf("%d", &time_limit_sec);
+    } 
+  }
+
+  msg.cfg.time_limit_sec = time_limit_sec;
+  int choise_mode = 0;
+  
+  printf("Choose game type:\n");
+  printf("1) Game word without barries\n");
+  printf("2) Game word with barries\n");
+  printf("3) Game word inputed from a file\n");
+    
+  while (choise_mode < 1 || choise_mode > 3) {
+    scanf("%d", &choise_mode);
+  }
+  if (choise_mode == 1) {
     msg.cfg.world_type = WORLD_NO_OBSTACLES;
-    msg.cfg.width = 30;
-    msg.cfg.height = 20;
+  }
+  else if (choise_mode == 2) {
+    msg.cfg.world_type = WORLD_WITH_OBSTACLES;
+  }
+  else { //TOODO: Z SUBORU
+    printf("Not implemented yet\n");
+    msg.cfg.world_type = WORLD_NO_OBSTACLES;
 
-    ipc_client_send(&c->ipc, &msg);
+    //msg.cfg.world_type = WORLD_MAP_LOADED;
+    //printf("Write a path to a file\n");
+  }
+
+  char choise_multipl = ' ';
+  printf("Do you want to enable multiplayer? (y/n)\n");
+  while (choise_multipl != 'y' && choise_multipl != 'n') {
+    choise_multipl = getchar();
+  }
+
+  if (choise_multipl == 'y') {
+    msg.cfg.allowed_multiplayer = true;
+  } else {
+    msg.cfg.allowed_multiplayer = false;
+  }
+
+  // TODO: POZRI CI TO TREBA ALEBO TO STACI HARD CODED + bude to robit problemy pri WORLD_MAP_LOADED
+  msg.cfg.width = 30;
+  msg.cfg.height = 20;
+
+  ipc_client_send(&c->ipc, &msg);
 }
 
 void client_run(client_t *c) {
@@ -76,8 +133,9 @@ void client_run(client_t *c) {
     if (c->state == CLIENT_MENU) {
       int choice = menu_read_choice();
 
-      if (choice == 1) {
-        send_create_game(c);  
+      if (choice == 1 || choice == 2) {
+        if (choice == 1)  send_create_game(c); 
+
         send_connect(c);       
 
         c->state = CLIENT_IN_GAME;
@@ -94,11 +152,17 @@ void client_run(client_t *c) {
       }
       else if (choice == 3) {
         // zatiaľ iba “pokračovať” = nič (reálne to bude resume po pauze)
-        printf("Nemas pauznutu hru.\n");
+        if (!c->paused) {
+          printf("Nemas pauznutu hru.\n");
+        } else {
+          printf("ESTE NEIMPLEMENTOVANE\n");
+        }
       } 
       else if (choice == 4) {
         c->state = CLIENT_EXIT;
         c->running = false;
+
+        //TOO: SKONTROLUJ CI TO UVOLNY SOCKET ALEBO PORT
       }
     }
   }

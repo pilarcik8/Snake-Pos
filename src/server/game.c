@@ -1,4 +1,6 @@
 #include "game.h"
+#include "../common/config.h"
+
 #include <pthread.h>
 #include <stdio.h>
 
@@ -20,7 +22,7 @@ int game_update(game_t *game, int player_count, int delta_ms) {
   /* ----- ŠTANDARTNY REŽIM ----- */
   if (game->mode == GAME_STANDARD) {
     if (player_count == 0) {
-      game->empty_time_ms += delta_ms;
+      game->empty_time_ms += delta_ms; // cas bez pracov
       if (game->empty_time_ms >= EMPTY_GAME_TIMEOUT_SEC * 1000) {
         printf("[GAME] No players for %d sec -> game over\n", EMPTY_GAME_TIMEOUT_SEC);
         game->running = false;

@@ -6,13 +6,13 @@
 #include "../common/config.h"
 
 typedef struct {
-    int server_fd;
-    int client_fds[MAX_PLAYERS];
+  int server_fd;
+  int client_fds[MAX_PLAYERS];
 
-    int client_player_id[MAX_PLAYERS]; // ID priradene slotu
-    int next_player_id;                // dalsie ID pre nove pripojenie
+  int client_player_id[MAX_PLAYERS]; // ID priradene slotu
+  int next_player_id;                // dalsie ID pre nove pripojenie
 
-    pthread_mutex_t lock;
+  pthread_mutex_t lock;
 } ipc_server_t;
 
 int ipc_server_start(ipc_server_t *ipc, int port);
