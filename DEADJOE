@@ -1,0 +1,58 @@
+
+*** These modified files were found in JOE when it aborted on Tue Jan  6 21:46:07 2026
+*** JOE was aborted because the terminal closed
+
+*** These modified files were found in JOE when it aborted on Tue Jan  6 21:47:39 2026
+*** JOE was aborted by UNIX signal 1
+
+*** File '(Unnamed)'
+/home/pilarcik8/Snake-Pos/.git/COMMIT_EDITMSG
+
+*** File '/home/pilarcik8/Snake-Pos/.git/COMMIT_EDITMSG'
+
+Oprava chyb a bugov
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# interactive rebase in progress; onto 02d5f37
+# Last command done (1 command done):
+#    pick dff83bd Oprava chyb a bugov
+# Next command to do (1 remaining command):
+#    pick ad660b4 Pridavam fork exec, este nejde
+# You are currently rebasing branch 'main' on '02d5f37'.
+#
+# Changes to be committed:
+#	modified:   src/client/client.c
+#	modified:   src/client/client.h
+#	modified:   src/client/client_main.c
+#	modified:   src/common/protocol.h
+#	modified:   src/server/ipc_server.h
+#	modified:   src/server/snake.h
+#	modified:   src/server/world.c
+#
+# Untracked files:
+#	.# Oprava chyb a bugov
+#	DEADJOE
+#
+
+*** File '* Startup Log *'
+Processing '/etc/joe/editorrc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/editorrc
+
+*** These modified files were found in JOE when it aborted on Tue Jan  6 21:58:11 2026
+*** JOE was aborted by UNIX signal 1
+
+*** File '(Unnamed)'
+:q
+
+*** File '(Unnamed)'
+/home/pilarcik8/Snake-Pos/.git/COMMIT_EDITMSG
+
+*** File '* Startup Log *'
+Processing '/etc/joe/editorrc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/editorrc

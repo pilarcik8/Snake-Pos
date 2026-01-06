@@ -36,7 +36,7 @@ static int menu_read_choice(void) {
   }
   return c;
 }
-
+//
 static void send_connect(client_t *c) {
   client_message_t msg;
   msg.type = MSG_CONNECT;
@@ -63,7 +63,6 @@ static void send_create_game(client_t *c) {
   char input = ' ';
   int time_limit_sec = 0;
 
- 
   printf("Choose game mode:\n");
   printf("s) Standart\n");
   printf("t) Timed\n");
@@ -125,7 +124,7 @@ static void send_create_game(client_t *c) {
 
   ipc_client_send(&c->ipc, &msg);
 }
-
+ 
 void client_run(client_t *c) {
   if (!c->running) return;
 
@@ -167,7 +166,3 @@ void client_run(client_t *c) {
     }
   }
 }
-
-
-
-

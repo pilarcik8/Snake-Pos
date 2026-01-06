@@ -110,32 +110,31 @@ static bool all_empty_reachable(const world_t *w) {
 }
 
 static bool generate_obstacles_connected(world_t *w, int obstacle_percent) {
-    if (obstacle_percent < 0) obstacle_percent = 0;
-    if (obstacle_percent > 80) obstacle_percent = 80;
+  if (obstacle_percent < 0) obstacle_percent = 0;
+  if (obstacle_percent > 80) obstacle_percent = 80;
 
-    const int total = w->width * w->height;
-    const int target_walls = (total * obstacle_percent) / 100;
+  const int total = w->width * w->height;
+  const int target_walls = (total * obstacle_percent) / 100;
 
-    const int attempts = 200;
-    for (int a = 0; a < attempts; a++) {
-        world_clear(w);
+  const int attempts = 200;
+  for (int a = 0; a < attempts; a++) {
+    world_clear(w);
 
-        int placed = 0;
-        while (placed < target_walls) {
-            int x = rand() % w->width;
-            int y = rand() % w->height;
-            if (w->cells[y][x] == CELL_EMPTY) {
-                w->cells[y][x] = CELL_WALL;
-                placed++;
-            }
-        }
-
-        if (all_empty_reachable(w)) {
-            return true;
-        }
+    int placed = 0;
+    while (placed < target_walls) {
+      int x = rand() % w->width;
+      int y = rand() % w->height;
+      if (w->cells[y][x] == CELL_EMPTY) {
+        w->cells[y][x] = CELL_WALL;
+        placed++;
+      }
     }
 
-    return false;
+    if (all_empty_reachable(w)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool world_generate(world_t *w, world_type_t kind, int obstacle_percent) {
@@ -195,4 +194,5 @@ bool world_load_from_file(world_t *w, const char *path) {
 
     return true;
 }
+
 

@@ -62,4 +62,3 @@ typedef struct {
 } server_message_t;
 
 #endif
-

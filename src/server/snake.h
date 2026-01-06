@@ -24,3 +24,4 @@ bool snake_self_collision(const snake_t *s);
 
 #endif
 
+

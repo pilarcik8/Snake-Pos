@@ -22,4 +22,3 @@ int ipc_server_receive(ipc_server_t *ipc, client_message_t *msg);
 void ipc_server_send_state(ipc_server_t *ipc, server_message_t *state);
 
 #endif
-
