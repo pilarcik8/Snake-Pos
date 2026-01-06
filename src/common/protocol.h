@@ -15,13 +15,13 @@ typedef enum {
   MSG_GAME_OVER,
 
   MSG_CREATE_GAME,   
-  MSG_CREATE_ACK
+  MSG_CREATE_ACK  //TODO: POUZI alebo vymaz 
 } message_type_t;
 
 typedef struct {
   game_mode_t mode;         // GAME_STANDARD / GAME_TIMED
   int time_limit_sec;       // len ak TIMED (inak 0)
-  world_type_t world_type;  // bez/so prekážkami
+  world_type_t world_type;  // bez/so prekážkami, z suboru
   int width;                // rozmery (ak nenačítavaš zo súboru)
   int height;
   bool allowed_multiplayer;
@@ -49,6 +49,9 @@ typedef struct {
   message_type_t type;
   int game_time;
   int player_count;
+
+  int width;
+  int height;
 
   int assigned_player_id;
 

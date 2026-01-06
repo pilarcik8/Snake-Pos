@@ -14,10 +14,8 @@ static void draw_state(const server_message_t *st) {
     printf("Cas: %d | Hracov: %d\n", st->game_time, st->player_count);
     printf("WASD pohyb | p pauza | q odchod\n\n");
 
-    // rozmery sveta (zatiaľ natvrdo ako na serveri: 30x20)
-    // DOCASTNE - ak to neskôr pošleš v správe, tak to len nahradíš
-    const int W = 30;
-    const int H = 20;
+    const int W = st->width;
+    const int H = st->height;
 
     // lokálny buffer na ASCII mapu
     char grid[H][W];
@@ -65,6 +63,8 @@ static void draw_state(const server_message_t *st) {
         }
     }
 
+    //TODO: STENY
+
     // vypíš grid
     for (int y = 0; y < H; y++) {
         for (int x = 0; x < W; x++) {
@@ -95,7 +95,7 @@ void *render_thread_main(void *arg) {
             break;
         }
 
-        if (st.type == MSG_GAME_OVER) {
+        if (st.type == MSG_GAME_OVER) {  //TODO: implementovat na strane servera
             clear_screen();
             printf("Koniec hry. Cas: %d\n", st.game_time);
             c->running = false;

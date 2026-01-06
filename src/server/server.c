@@ -159,7 +159,7 @@ static void handle_input_locked(int player_id, direction_t dir) {
   snake_set_direction(&g.snakes[slot], dir);
 }
 
-// nova hra
+// tvorba novej hry
 static void start_new_game_locked(const game_config_t *cfg) {
   if (cfg->width <= 0 || cfg->height <= 0) return;
 
@@ -182,13 +182,18 @@ static void start_new_game_locked(const game_config_t *cfg) {
 
   // nastav world
   world_init(&g.world, cfg->width, cfg->height);
+
   if (cfg->world_type == WORLD_NO_OBSTACLES) {
     world_generate(&g.world, WORLD_NO_OBSTACLES, 0);
     g.pass_through_edges_en = true;
-  } else {
+  } 
+  else if (cfg->world_type == WORLD_WITH_OBSTACLES) {
     world_generate(&g.world, WORLD_WITH_OBSTACLES, 20); // napr. 20%
     g.pass_through_edges_en = false; // pri prekážkach typicky bez wrapu
-  } 
+  } else {
+    // TODO: TOTO NIE JE ESTE IMPLEMENTOVANE NA DRUHEJ STRANE______________________________
+    world_generate(&g.world, WORLD_MAP_LOADED, 0); // napr. 20%
+  }
   
   // pod g.lock
   if (g_server) g_server->game_running = true;
@@ -236,10 +241,13 @@ static void kill_snake_locked(int idx) {
     // TODO: Urobit zapis bodov a casu hada po vypadnuti hraca.
 }
 
+// tvorba spravy pre render klienta
 static void build_state_locked(server_message_t *out, int game_time) {
   out->type = MSG_STATE;
   out->game_time = game_time;
   out->player_count = g.active_snakes;
+
+  //out->height = 
 
   for (int i = 0; i < MAX_PLAYERS; i++) {
     out->snakes[i].player_id = g.snakes[i].player_id;
@@ -252,7 +260,7 @@ static void build_state_locked(server_message_t *out, int game_time) {
     }
   }
 
-  out->fruit_count = g.fruit.count;
+  out->fruit_count = g.fruit.count; // ako toto je vzdy == player_count 
   for (int i = 0; i < g.fruit.count; i++) {
     out->fruits[i] = g.fruit.pos[i];
   }
@@ -311,7 +319,7 @@ static void *game_loop(void *arg) {
     }
 
     // Normálny tick:
-      // pohyb hadov
+      // - pohyb hadov
     for (int i = 0; i < MAX_PLAYERS; i++) {
       if (!g.slot_used[i]) continue;
       if (!g.snakes[i].alive) continue;
@@ -319,7 +327,7 @@ static void *game_loop(void *arg) {
       snake_move(&g.snakes[i], g.world.width, g.world.height, g.pass_through_edges_en);
     }
 
-      // kolízie (stena, vlastné telo, iný had)
+      // - kolízie (stena, vlastné telo, iný had)
     for (int i = 0; i < MAX_PLAYERS; i++) {
       if (!g.slot_used[i]) continue;
       if (!g.snakes[i].alive) continue;
@@ -329,7 +337,7 @@ static void *game_loop(void *arg) {
       if (col.hit_self || col.hit_wall || col.hit_other) kill_snake_locked(i);
     }
 
-      // ovocie (ak niekto zjedol → grow + score + respawn ovocia)
+      // - ovocie (ak niekto zjedol → grow + score + respawn ovocia)
     if (fruit_handle_eating(&g.world, g.snakes, g.slot_used, MAX_PLAYERS, &g.fruit)) fruit_sync_locked();
 
     // stav na odoslanie (čas = g.game.elapsed_time!)
@@ -350,6 +358,7 @@ static void *game_loop(void *arg) {
   return NULL;
 }
 
+// komunikacia s klientom
 static void *ipc_loop(void *arg) {
   server_context_t *ctx = (server_context_t *)arg;
 
@@ -409,6 +418,7 @@ void server_run(server_t *server, ipc_server_t *ipc) {
   pthread_create(&server->ipc_thread, NULL, ipc_loop, &ctx);
 }
 
+// vypnutie
 void server_shutdown(server_t *server) {
   server->running = false;
 
