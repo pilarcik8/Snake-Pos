@@ -13,6 +13,8 @@ typedef struct {
   int next_player_id;                // dalsie ID pre nove pripojenie
 
   pthread_mutex_t lock;
+
+  int listen_port;
 } ipc_server_t;
 
 int ipc_server_start(ipc_server_t *ipc, int port);

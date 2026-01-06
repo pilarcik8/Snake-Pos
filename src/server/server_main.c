@@ -11,7 +11,6 @@
 static server_t server;
 static ipc_server_t ipc;
 
-// ukončenie pre Ctrl+C
 static void handle_sigint(int sig) {
   (void)sig;
   printf("\n[SERVER] Shutting down...\n");
@@ -21,7 +20,7 @@ static void handle_sigint(int sig) {
 
 static void print_usage(const char *prog) {
   printf("Pouzitie:\n");
-  printf("  %s <port>\n", prog);
+  printf("  %s <port> [port_fd]\n", prog);
 }
 
 int main(int argc, char **argv) {
@@ -31,28 +30,35 @@ int main(int argc, char **argv) {
   }
 
   int port = atoi(argv[1]);
-  if (port <= 0 || port > 65535) {
+  if (port < 0 || port > 65535) {
     printf("Neplatny port\n");
     return 1;
   }
 
-  // signaly
+  int port_fd = -1;
+  if (argc >= 3) {
+    port_fd = atoi(argv[2]);
+    if (port_fd < 0) port_fd = -1;
+  }
+
   signal(SIGINT, handle_sigint);
   signal(SIGPIPE, SIG_IGN);
 
-  // init servera (nastavi game mode + time limit)
   server_init(&server);
 
-  // start IPC (socket)
   if (ipc_server_start(&ipc, port) != 0) return 1;
-  
-  // spustenie vlakien
+
+  // ak klient poslal FD, zapis tam realny port a zavri
+  if (port_fd != -1) {
+    dprintf(port_fd, "%d\n", ipc.listen_port);
+    close(port_fd);
+  }
+
   server_run(&server, &ipc);
 
-  // pockaj na vlakna (server_shutdown v SIGINT ich korektne ukonci)
   pthread_join(server.game_thread, NULL);
   pthread_join(server.ipc_thread, NULL);
-  
+
   printf("\n[SERVER] Treads down...\n");
   return 0;
 }
