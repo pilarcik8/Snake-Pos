@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   if (argc >= 3) address = argv[2];
 
   client_t client;
-  client_init(&client, address, port);
+  client_init(&client);
   client_run(&client);
   client_shutdown(&client);
 

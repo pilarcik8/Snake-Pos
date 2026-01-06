@@ -6,16 +6,15 @@
 #include <stdio.h>
 #include <unistd.h>
 
-void client_init(client_t *c, const char *address, int port) {
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
+#include <stdlib.h>
+
+void client_init(client_t *c) {
   memset(c, 0, sizeof(*c));
   c->running = true;
-
   ipc_client_init(&c->ipc);
-
-  if (!ipc_client_connect(&c->ipc, address, port)) {
-    c->running = false;
-    return;
-  }
 }
 
 static int menu_read_choice(void) {
@@ -124,6 +123,72 @@ static void send_create_game(client_t *c) {
 
   ipc_client_send(&c->ipc, &msg);
 }
+
+  static int spawn_server_and_get_port(void) {
+    int pfd[2];
+    if (pipe(pfd) < 0) {
+        perror("pipe");
+        return -1;
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        close(pfd[0]);
+        close(pfd[1]);
+        return -1;
+    }
+
+    if (pid == 0) {
+        // child: redirect stdout -> pipe
+        close(pfd[0]);
+        dup2(pfd[1], STDOUT_FILENO);
+        dup2(pfd[1], STDERR_FILENO); // nech vidíš aj chyby
+        close(pfd[1]);
+
+        // server s portom 0 => OS pridelí voľný port
+        char *argv[] = { "./server", "0", NULL };
+        execv(argv[0], argv);
+
+        perror("execv");
+        _exit(127);
+    }
+
+    // parent: čítaj výstup servera a vyparsuj port
+    close(pfd[1]);
+
+    char buf[256];
+    int port = -1;
+
+    // jednoduché čítanie po riadkoch (stačí na "Server listening on port %d\n")
+    FILE *fp = fdopen(pfd[0], "r");
+    if (!fp) {
+        perror("fdopen");
+        close(pfd[0]);
+        return -1;
+    }
+
+    // Čítaj pár riadkov, kým nenájdeš port
+    for (int i = 0; i < 20; i++) {
+        if (!fgets(buf, sizeof(buf), fp)) break;
+
+        int p;
+        if (sscanf(buf, "Server listening on port %d", &p) == 1) {
+            port = p;
+            break;
+        }
+    }
+
+    fclose(fp);
+
+    if (port <= 0 || port > 65535) {
+        fprintf(stderr, "Nepodarilo sa zistit port servera.\n");
+        return -1;
+    }
+
+    // DÔLEŽITÉ: parent NESMIE čakať na server (P5) => žiadne waitpid tu
+    return port;
+}
  
 void client_run(client_t *c) {
   if (!c->running) return;
@@ -132,9 +197,19 @@ void client_run(client_t *c) {
     if (c->state == CLIENT_MENU) {
       int choice = menu_read_choice();
 
-      if (choice == 1 || choice == 2) {
-        if (choice == 1)  send_create_game(c); 
+      if (choice == 1) {
+        int port = spawn_server_and_get_port();
+        if (port < 0) { /* vypis a return do menu */ }
 
+        if (!client_connect_to(c, "127.0.0.1", port)) { /* fail */ }
+
+        // teraz posli create_game, connect, spusti thready...
+        c->state = CLIENT_IN_GAME;
+        c->paused = false;
+        send_create_game(c);
+        send_connect(c);
+      }
+      else if (choice == 2) {
         send_connect(c);       
 
         c->state = CLIENT_IN_GAME;
@@ -166,3 +241,11 @@ void client_run(client_t *c) {
     }
   }
 }
+ 
+bool client_connect_to(client_t *c, const char *address, int port) {
+  // ak už si bol pripojený, zavri staré spojenie
+  if (c->ipc.connected) ipc_client_close(&c->ipc);
+
+  return ipc_client_connect(&c->ipc, address, port);
+}
+
