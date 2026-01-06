@@ -53,14 +53,11 @@ typedef struct {
   int width;
   int height;
 
+  cell_t cells[MAX_WORLD_HEIGHT][MAX_WORLD_WIDTH];
+
   int assigned_player_id;
-
-  // ACK info
-  int ok;             // 1=ok, 0=fail
-  int err_code;       // 0=ok, inak dôvod
-
+  
   snake_state_t snakes[MAX_PLAYERS];
-  int fruit_count;
   position_t fruits[MAX_PLAYERS];
 } server_message_t;
 

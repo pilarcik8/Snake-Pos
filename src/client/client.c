@@ -121,7 +121,7 @@ static void send_create_game(client_t *c) {
 
   // TODO: POZRI CI TO TREBA ALEBO TO STACI HARD CODED + bude to robit problemy pri WORLD_MAP_LOADED
   msg.cfg.width = 50;
-  msg.cfg.height = 50;
+  msg.cfg.height = 30;
 
   ipc_client_send(&c->ipc, &msg);
 }

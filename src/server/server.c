@@ -188,7 +188,7 @@ static void start_new_game_locked(const game_config_t *cfg) {
     g.pass_through_edges_en = true;
   } 
   else if (cfg->world_type == WORLD_WITH_OBSTACLES) {
-    world_generate(&g.world, WORLD_WITH_OBSTACLES, 20); // napr. 20%
+    world_generate(&g.world, WORLD_WITH_OBSTACLES, 1); // napr. 10%
     g.pass_through_edges_en = false; // pri prekážkach typicky bez wrapu
   } else {
     // TODO: TOTO NIE JE ESTE IMPLEMENTOVANE NA DRUHEJ STRANE______________________________
@@ -251,6 +251,8 @@ static void build_state_locked(server_message_t *out, int game_time) {
   out->width  = g.world.width;
   out->height = g.world.height;
 
+  memcpy(out->cells, g.world.cells, sizeof(g.world.cells)); // policka
+
   for (int i = 0; i < MAX_PLAYERS; i++) {
     out->snakes[i].player_id = g.snakes[i].player_id;
     out->snakes[i].length = g.snakes[i].length;
@@ -262,7 +264,6 @@ static void build_state_locked(server_message_t *out, int game_time) {
     }
   }
 
-  out->fruit_count = g.fruit.count; // ako toto je vzdy == player_count 
   for (int i = 0; i < g.fruit.count; i++) {
     out->fruits[i] = g.fruit.pos[i];
   }

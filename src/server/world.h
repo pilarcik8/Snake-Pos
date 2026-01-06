@@ -6,9 +6,9 @@
 #include "../common/config.h"
 
 typedef struct {
-    int width;
-    int height;
-    cell_t cells[MAX_WORLD_HEIGHT][MAX_WORLD_WIDTH];
+  int width;
+  int height;
+  cell_t cells[MAX_WORLD_HEIGHT][MAX_WORLD_WIDTH];
 } world_t;
 
 /* inicializácia rozmerov + vyčistenie na CELL_EMPTY */
