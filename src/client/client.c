@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "client.h"
 #include "input.h"
 #include "render.h"
@@ -114,21 +115,12 @@ static void send_create_game(client_t *c) {
 
 static int spawn_server_and_get_port(void) {
   int pfd[2];
-  if (pipe(pfd) < 0) {
-    perror("pipe");
-    return -1;
-  }
+  if (pipe(pfd) < 0) { perror("pipe"); return -1; }
 
   pid_t pid = fork();
-  if (pid < 0) {
-    perror("fork");
-    close(pfd[0]);
-    close(pfd[1]);
-    return -1;
-  }
+  if (pid < 0) { perror("fork"); close(pfd[0]); close(pfd[1]); return -1; }
 
   if (pid == 0) {
-    // child
     close(pfd[0]);
 
     char fdstr[32];
@@ -141,26 +133,17 @@ static int spawn_server_and_get_port(void) {
     _exit(127);
   }
 
-  // parent
   close(pfd[1]);
 
   char buf[64];
   ssize_t n = read(pfd[0], buf, sizeof(buf) - 1);
   close(pfd[0]);
 
-  if (n <= 0) {
-    printf("Nepodarilo sa precitat port od servera.\n");
-    return -1;
-  }
-
+  if (n <= 0) return -1;
   buf[n] = '\0';
-  int port = atoi(buf);
-  if (port <= 0 || port > 65535) {
-    printf("Neplatny port od servera: '%s'\n", buf);
-    return -1;
-  }
 
-  // NESMIEME waitpid (P5)
+  int port = atoi(buf);
+  if (port <= 0 || port > 65535) return -1;
   return port;
 }
 
@@ -235,6 +218,8 @@ void client_run(client_t *c) {
       }
 
       if (!client_connect_to(c, "127.0.0.1", port)) {
+         c->state = CLIENT_IN_GAME;
+        c->paused = false;       
         printf("Nepodarilo sa pripojit na novy server (port %d).\n", port);
         continue;
       }
