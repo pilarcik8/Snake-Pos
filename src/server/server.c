@@ -247,7 +247,9 @@ static void build_state_locked(server_message_t *out, int game_time) {
   out->game_time = game_time;
   out->player_count = g.active_snakes;
 
-  //out->height = 
+  // rozmery sveta pre render
+  out->width  = g.world.width;
+  out->height = g.world.height;
 
   for (int i = 0; i < MAX_PLAYERS; i++) {
     out->snakes[i].player_id = g.snakes[i].player_id;
