@@ -13,6 +13,9 @@ typedef struct {
     bool alive;
     int score;
     bool dir_locked;
+
+    bool paused;        // hráč je v menu => had stojí
+    int resume_ms;      // po návrate čaká 3000ms
 } snake_t;
 
 void snake_init(snake_t *s, int player_id, position_t start);

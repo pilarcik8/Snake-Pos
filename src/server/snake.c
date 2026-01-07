@@ -15,6 +15,9 @@ void snake_init(snake_t *s, int player_id, position_t start) {
   s->direction = RIGHT;
   s->alive = true;
   s->score = 0;
+
+  s->paused = false;
+  s->resume_ms = 0;
 }
 
 void snake_set_direction(snake_t *s, direction_t dir) {

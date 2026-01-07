@@ -9,11 +9,6 @@ void game_init(game_t *game) {
   game->empty_time_ms = 0;
   game->ms_accum = 0;
   game->running = true;
-  game->paused = false;
-}
-
-void game_toggle_pause(game_t *game) {
-  game->paused = !game->paused;
 }
 
 int game_update(game_t *game, int player_count, int delta_ms) {
@@ -36,9 +31,6 @@ int game_update(game_t *game, int player_count, int delta_ms) {
       game->empty_time_ms = 0;
     }  
   }
-
-  // počas pauzy čas neplynie
-  if (game->paused) return 1;
 
   // Čas plynie po sekundách z tickov
   game->ms_accum += delta_ms;

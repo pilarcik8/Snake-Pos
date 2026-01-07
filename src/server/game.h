@@ -15,7 +15,6 @@ typedef struct {
     bool allowed_multiplayer;
 
     bool running;          
-    bool paused;
 } game_t;
 
 void game_init(game_t *game);

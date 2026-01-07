@@ -10,7 +10,7 @@
 #include <stdbool.h>
 
 #include <sys/types.h>
-#include <errno.h>
+//#include <errno.h>
 
 void client_init(client_t *c) {
   memset(c, 0, sizeof(*c));

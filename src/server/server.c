@@ -178,7 +178,6 @@ static void start_new_game_locked(const game_config_t *cfg) {
   g.game.mode = cfg->mode;
   g.game.time_limit_sec = cfg->time_limit_sec;
   game_init(&g.game);
-  g.game.paused = false;
 
   // nastav world
   world_init(&g.world, cfg->width, cfg->height);
@@ -208,23 +207,37 @@ static void start_new_game_locked(const game_config_t *cfg) {
 }
 
 static void process_client_message_locked(int player_id, const client_message_t *msg) {
+  int slot = find_slot_by_player_id_locked(player_id); // slot sa == indexu pola
+
   if (msg->type == MSG_DISCONNECT) {
     handle_disconnect_locked(player_id);
   }
 
-  else if (msg->type == MSG_INPUT && !g.game.paused) {
+  else if (msg->type == MSG_INPUT && !g.snakes[slot].paused) {
     handle_input_locked(player_id, msg->direction);
   }
-
   else if (msg->type == MSG_PAUSE) {
-    game_toggle_pause(&g.game);
+    if (slot >= 0 && g.snakes[slot].alive) {
+      g.snakes[slot].paused = true;     // had stojí
+      g.snakes[slot].resume_ms = 0;     // ešte nebeží “návratový” timer
+    }
   }
   else if (msg->type == MSG_CREATE_GAME) {
     start_new_game_locked(&msg->cfg);
   }
   else if (msg->type == MSG_CONNECT) {
+    if (slot >= 0) {
+      // hráč sa vracia do svojej hry
+      if (g.snakes[slot].alive && g.snakes[slot].paused) {
+        g.snakes[slot].paused = false;
+        g.snakes[slot].resume_ms = PAUSE_DELAY_SEC * 1000; // 3 sekundy
+    }
+    return;
+  }
+
+    // nový hráč
     if (g_server && g_server->game_running) {
-        handle_new_connection_locked(player_id);
+      handle_new_connection_locked(player_id);
     }
   }
 }
@@ -311,25 +324,23 @@ static void *game_loop(void *arg) {
       break;
     }
 
-    // pauza 
-    if (g.game.paused) {
-      server_message_t state;
-      memset(&state, 0, sizeof(state));
-
-      // do správy dáme aktuálny čas hry + všetky entity
-      build_state_locked(&state, g.game.elapsed_time_sec);
-
-      pthread_mutex_unlock(&g.lock);
-      ipc_server_send_state(ctx->ipc, &state);
-      continue;
-    }
-
     // Normálny tick:
-      // - pohyb hadov
+      // - pauza
     for (int i = 0; i < MAX_PLAYERS; i++) {
       if (!g.slot_used[i]) continue;
       if (!g.snakes[i].alive) continue;
 
+      // ak je hráč v pauze -> had stojí
+      if (g.snakes[i].paused) continue;
+
+      // ak sa práve vrátil -> 3s stojí
+      if (g.snakes[i].resume_ms > 0) {
+        g.snakes[i].resume_ms -= SERVER_TICK_MS;
+        if (g.snakes[i].resume_ms < 0) g.snakes[i].resume_ms = 0;
+        continue;
+      }
+      
+      // - pohyb hadov
       snake_move(&g.snakes[i], g.world.width, g.world.height, g.pass_through_edges_en);
     }
 
