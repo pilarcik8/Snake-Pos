@@ -1,9 +1,7 @@
 #include "input.h"
 #include "client.h"
 
-#include <unistd.h>
 #include <termios.h>
-#include <stdbool.h>
 #include <string.h>
 
 static struct termios g_old_term;

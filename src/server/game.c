@@ -1,7 +1,6 @@
 #include "game.h"
 #include "../common/config.h"
 
-#include <pthread.h>
 #include <stdio.h>
 
 void game_init(game_t *game) {
@@ -47,10 +46,6 @@ int game_update(game_t *game, int player_count, int delta_ms) {
   }
 
   return game->running;
-}
-
-void game_end(game_t *game) {
-  (void)game; 
 }
 
 

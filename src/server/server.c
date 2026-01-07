@@ -1,20 +1,12 @@
 #define _POSIX_C_SOURCE 199309 //pre čas
 
-#include <pthread.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <time.h>
-
 #include "server.h"
 #include "game.h"
-#include "world.h"
-#include "snake.h"
 #include "collisions.h"
 #include "fruit.h"
-#include "../common/protocol.h"
-#include "../common/config.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 // Globalny stav servera.
 typedef struct {
@@ -367,7 +359,6 @@ static void *game_loop(void *arg) {
     ipc_server_send_state(ctx->ipc, &state);
   }
 
-  game_end(&g.game);
   pthread_mutex_lock(&g.lock);
   ctx->server->game_running = false;
   pthread_mutex_unlock(&g.lock);

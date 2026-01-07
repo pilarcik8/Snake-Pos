@@ -1,13 +1,7 @@
 #include "ipc_server.h"
 
-#include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <fcntl.h>
 #include <errno.h>
 
 int ipc_server_start(ipc_server_t *ipc, int port) {

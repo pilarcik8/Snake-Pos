@@ -1,15 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
+
 #include "client.h"
 #include "input.h"
 #include "render.h"
 
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <stdbool.h>
-
-#include <sys/types.h>
 
 void client_init(client_t *c) {
   memset(c, 0, sizeof(*c));

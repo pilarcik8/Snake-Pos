@@ -1,15 +1,16 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <pthread.h>
 #include "ipc_server.h"
 
+#include <pthread.h>
+
 typedef struct {
-    bool running;
-    pthread_t game_thread;
-    pthread_t ipc_thread;
-    ipc_server_t *ipc;
-    bool game_running;
+  bool running;
+  pthread_t game_thread;
+  pthread_t ipc_thread;
+  ipc_server_t *ipc;
+  bool game_running;
 } server_t;
 
 

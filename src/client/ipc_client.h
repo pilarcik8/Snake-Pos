@@ -1,12 +1,14 @@
 #ifndef IPC_CLIENT_H
 #define IPC_CLIENT_H
 
-#include <stdbool.h>
 #include "../common/protocol.h"
 
+#include <unistd.h>
+#include <arpa/inet.h>
+
 typedef struct {
-    int fd;
-    bool connected;
+  int fd;
+  bool connected;
 } ipc_client_t;
 
 void ipc_client_init(ipc_client_t *c);

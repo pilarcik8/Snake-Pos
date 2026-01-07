@@ -1,9 +1,11 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include "ipc_client.h"
+
 #include <stdbool.h>
 #include <pthread.h>
-#include "ipc_client.h"
+#include <unistd.h>
 
 typedef enum {
   CLIENT_MENU,

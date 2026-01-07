@@ -1,9 +1,12 @@
 #ifndef IPC_SERVER_H
 #define IPC_SERVER_H
 
-#include <pthread.h>
 #include "../common/protocol.h"
-#include "../common/config.h"
+
+#include <pthread.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 typedef struct {
   int server_fd;

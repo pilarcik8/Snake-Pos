@@ -6,16 +6,16 @@
 #include "../common/config.h"
 
 typedef struct {
-    int player_id;
-    position_t body[MAX_SNAKE_LENGTH];
-    int length;
-    direction_t direction;
-    bool alive;
-    int score;
-    bool dir_locked;
+  int player_id;
+  position_t body[MAX_SNAKE_LENGTH];
+  int length;
+  direction_t direction;
+  bool alive;
+  int score;
+  bool dir_locked;
 
-    bool paused;        // hráč je v menu => had stojí
-    int resume_ms;      // po návrate čaká 3000ms
+  bool paused;        // hráč je v menu => had stojí
+  int resume_ms;      // po návrate čaká 3000ms
 } snake_t;
 
 void snake_init(snake_t *s, int player_id, position_t start);

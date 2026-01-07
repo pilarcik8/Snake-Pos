@@ -1,14 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "server.h"
-#include "ipc_server.h"
 
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <string.h>
 
 // globály
 static server_t server;

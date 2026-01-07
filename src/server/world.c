@@ -1,4 +1,5 @@
 #include "world.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -148,8 +149,8 @@ bool world_generate(world_t *w, world_type_t kind, int obstacle_percent) {
     return generate_obstacles_connected(w, obstacle_percent);
 }
 
-/* ---- Povinné: načítanie sveta zo súboru ---- */
-/* ASCII: '#' = prekážka, '.' = voľné */
+// načítanie sveta zo súboru
+// ASCII: '#' = prekážka, '.' = voľné 
 
 static int line_len_no_nl(const char *s) {
     int n = 0;

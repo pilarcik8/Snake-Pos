@@ -3,12 +3,8 @@ CFLAGS = -Wall -Wextra -pedantic -std=c11 -g
 LDFLAGS = -pthread
 
 SRC_DIR = src
-COMMON_DIR = $(SRC_DIR)/common
 SERVER_DIR = $(SRC_DIR)/server
 CLIENT_DIR = $(SRC_DIR)/client
-
-COMMON_SRCS = \
-	$(COMMON_DIR)/protocol.c
 
 SERVER_SRCS = \
 	$(SERVER_DIR)/server_main.c \

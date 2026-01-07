@@ -15,7 +15,6 @@ typedef enum {
   MSG_GAME_OVER,
 
   MSG_CREATE_GAME,   
-  MSG_CREATE_ACK  //TODO: POUZI alebo vymaz 
 } message_type_t;
 
 typedef struct {
@@ -27,7 +26,7 @@ typedef struct {
   bool allowed_multiplayer;
 } game_config_t;
 
-// Sprava posielana z klienta na server TODO: rozdel spravy na dve
+// Sprava posielana z klienta na server
 typedef struct {
   message_type_t type;
   direction_t direction;    // používa sa len pri MSG_INPUT
@@ -44,7 +43,7 @@ typedef struct {
   position_t body[MAX_SNAKE_LENGTH];
 } snake_state_t;
 
-// Sprava posielana zo servera klientom TODO: Vytvorit ACK messege
+// Sprava posielana zo servera klientom
 typedef struct {
   message_type_t type;
   int game_time;
