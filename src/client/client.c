@@ -80,32 +80,32 @@ static void send_create_game(client_t *c) {
 
   msg.cfg.time_limit_sec = time_limit_sec;
 
-  int choise_mode = 0;
+  int choice_mode = 0;
   printf("Choose game type:\n");
   printf("1) Game word without barries\n");
   printf("2) Game word with barries\n");
   printf("3) Game word inputed from a file\n");
 
-  while (choise_mode < 1 || choise_mode > 3) {
-    scanf("%d", &choise_mode);
+  while (choice_mode < 1 || choice_mode > 3) {
+    scanf("%d", &choice_mode);
   }
 
-  if (choise_mode == 1) msg.cfg.world_type = WORLD_NO_OBSTACLES;
-  else if (choise_mode == 2) msg.cfg.world_type = WORLD_WITH_OBSTACLES;
+  if (choice_mode == 1) msg.cfg.world_type = WORLD_NO_OBSTACLES;
+  else if (choice_mode == 2) msg.cfg.world_type = WORLD_WITH_OBSTACLES;
   else {
     printf("Not implemented yet\n");
     msg.cfg.world_type = WORLD_NO_OBSTACLES;
   }
 
-  char choise_multipl = ' ';
+  char choice_multipl = ' ';
   printf("Do you want to enable multiplayer? (y/n)\n");
-  do { choise_multipl = (char)getchar(); } while (choise_multipl == '\n' || choise_multipl == '\r' || choise_multipl == ' ' || choise_multipl == '\t');
+  do { choice_multipl = (char)getchar(); } while (choice_multipl == '\n' || choice_multipl == '\r' || choice_multipl == ' ' || choice_multipl == '\t');
 
-  while (choise_multipl != 'y' && choise_multipl != 'n') {
-    choise_multipl = (char)getchar();
+  while (choice_multipl != 'y' && choice_multipl != 'n') {
+    choice_multipl = (char)getchar();
   }
 
-  msg.cfg.allowed_multiplayer = (choise_multipl == 'y');
+  msg.cfg.allowed_multiplayer = (choice_multipl == 'y');
 
   msg.cfg.width = 50;
   msg.cfg.height = 30;
@@ -211,6 +211,15 @@ void client_run(client_t *c) {
     int choice = menu_read_choice();
 
     if (choice == 1) {
+      // ak hrac ide pauza -> nova hra
+      if (c->paused && c->ipc.connected) {
+        client_message_t m; memset(&m,0,sizeof(m));
+        m.type = MSG_DISCONNECT;
+        ipc_client_send(&c->ipc, &m);
+        ipc_client_close(&c->ipc);
+        c->paused = false;
+      }
+
       int port = spawn_server_and_get_port();
       if (port < 0) {
         printf("Server sa nepodarilo spustit.\n");
@@ -235,6 +244,15 @@ void client_run(client_t *c) {
       if (c->running) c->state = CLIENT_MENU;
     }
     else if (choice == 2) {
+      // ak hrac ide pauza -> pripojit sa do inej hry
+      if (c->paused && c->ipc.connected) {
+        client_message_t m; memset(&m,0,sizeof(m));
+        m.type = MSG_DISCONNECT;
+        ipc_client_send(&c->ipc, &m);
+        ipc_client_close(&c->ipc);
+        c->paused = false;
+      }
+
       char ip[64];
       int port = 0;
 
@@ -258,10 +276,24 @@ void client_run(client_t *c) {
       if (c->running) c->state = CLIENT_MENU;
     }
     else if (choice == 3) {
-      printf("Pokračovanie zatiaľ nie je implementované.\n");
+      if (!c->paused) {
+        printf("Nemas pauznutu hru.\n");
+        continue;
+      }
+      if (!c->ipc.connected) {
+        printf("Nie si pripojeny k ziadnej hre.\n");
+        c->paused = false;
+      continue;
+      }
+
+      c->state = CLIENT_IN_GAME;
+      send_connect(c);        // server nastaví resume_ms=3000
+      start_game_threads(c);
+      if (c->running) c->state = CLIENT_MENU;
     }
     else if (choice == 4) {
       c->state = CLIENT_EXIT;
+      client_shutdown(c);        // odpojí (ak je pripojený = pauza) + zavrie socket
       c->running = false;
     }
   }
