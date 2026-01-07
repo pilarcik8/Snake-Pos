@@ -188,11 +188,10 @@ static void start_new_game_locked(const game_config_t *cfg) {
     g.pass_through_edges_en = true;
   } 
   else if (cfg->world_type == WORLD_WITH_OBSTACLES) {
-    world_generate(&g.world, WORLD_WITH_OBSTACLES, 1); // napr. 10%
+    world_generate(&g.world, WORLD_WITH_OBSTACLES, 5); // 5%
     g.pass_through_edges_en = false; // pri prekážkach typicky bez wrapu
   } else {
-    // TODO: TOTO NIE JE ESTE IMPLEMENTOVANE NA DRUHEJ STRANE______________________________
-    world_generate(&g.world, WORLD_MAP_LOADED, 0); // napr. 20%
+    world_generate(&g.world, WORLD_MAP_LOADED, 0); //NEIMPLEMENTOVANE
   }
   
   // pod g.lock
@@ -299,12 +298,16 @@ static void *game_loop(void *arg) {
 
       pthread_mutex_unlock(&g.lock);
 
-      // pošle koniec hry všetkým klientom
+      // pošli koniec hry všetkým (ak nie sú klienti, nič sa nestane)
       ipc_server_send_state(ctx->ipc, &end_msg);
 
-      //ctx->server->running = false; TOTO BY VYPLO CELY SERVER
-      
-      g_server->game_running = false; // TOTO KLIENTOV POSLE LEN DO MENU
+      // koniec hry = koniec procesu server
+      ctx->server->game_running = false;
+      ctx->server->running = false;
+
+      // zavri server_fd, aby accept určite “spadol”
+      close(ctx->ipc->server_fd);
+
       break;
     }
 
