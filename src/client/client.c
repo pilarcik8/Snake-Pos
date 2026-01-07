@@ -10,7 +10,6 @@
 #include <stdbool.h>
 
 #include <sys/types.h>
-//#include <errno.h>
 
 void client_init(client_t *c) {
   memset(c, 0, sizeof(*c));
@@ -276,19 +275,20 @@ void client_run(client_t *c) {
       if (c->running) c->state = CLIENT_MENU;
     }
     else if (choice == 3) {
-      if (!c->paused) {
+      if (!c->paused || !c->ipc.connected) {
         printf("Nemas pauznutu hru.\n");
         continue;
       }
-      if (!c->ipc.connected) {
-        printf("Nie si pripojeny k ziadnej hre.\n");
-        c->paused = false;
-      continue;
-      }
 
+      // návrat do hry
       c->state = CLIENT_IN_GAME;
-      send_connect(c);        // server nastaví resume_ms=3000
-      start_game_threads(c);
+      c->paused = false;
+
+      // toto na serveri spustí 3s resume (podľa tvojej logiky v MSG_CONNECT)
+      send_connect(c);
+
+      start_game_threads(c);  // znovu input + render
+
       if (c->running) c->state = CLIENT_MENU;
     }
     else if (choice == 4) {

@@ -84,19 +84,27 @@ void *render_thread_main(void *arg) {
     memset(&st, 0, sizeof(st));
 
     if (!ipc_client_receive(&c->ipc, &st)) {
-      c->running = false;
-      break;
+        // spojenie padlo alebo sme sa odpojili
+        c->state = CLIENT_MENU;
+        c->paused = false;
+        break;
     }
 
-    if (st.type == MSG_GAME_OVER) {  //TODO: implementovat na strane servera
-      clear_screen();
-      printf("Koniec hry. Cas: %d\n", st.game_time);
-      c->running = false;
-      break;
+    // AK SME V MENU (pauza alebo odchod), render thread sa má vypnúť
+    if (c->state != CLIENT_IN_GAME) {
+        break;
+    }
+
+    if (st.type == MSG_GAME_OVER) {
+        // hra skončila -> vráť do menu, ale klient nech beží ďalej
+        printf("Koniec hry. Cas: %d\n", st.game_time);
+        c->state = CLIENT_MENU;
+        c->paused = false;
+        break;
     }
 
     if (st.type == MSG_STATE) {
-      draw_state(&st);
+        draw_state(&st);
     }
   }
 

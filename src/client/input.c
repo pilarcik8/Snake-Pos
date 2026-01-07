@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <stdbool.h>
+#include <string.h>
 
 static struct termios g_old_term;
 
@@ -47,12 +48,20 @@ void *input_thread_main(void *arg) {
 
   while (c->running) {
     char key;
-    if (!read_key(&key)) {
-      continue;
-    }
+    if (!read_key(&key)) continue;
+    if (c->paused) continue;
 
     if (key == 'q') {
-      c->running = false;
+      client_message_t msg;
+      memset(&msg, 0, sizeof(msg));
+      msg.type = MSG_DISCONNECT;
+
+      ipc_client_send(&c->ipc, &msg);
+      ipc_client_close(&c->ipc);   // definitívny odchod = zmizne had
+
+      c->paused = false;
+      c->state = CLIENT_MENU;
+
       break;
     }
 
@@ -64,7 +73,7 @@ void *input_thread_main(void *arg) {
       ipc_client_send(&c->ipc, &msg);
       c->paused = true;
       c->state = CLIENT_MENU;
-      continue;
+      break;  // ukonči input thread, aby join() v main skončil
     }
 
     direction_t dir;
