@@ -21,11 +21,10 @@ int game_update(game_t *game, int player_count, int delta_ms) {
         printf("[GAME] No players for %d sec -> game over\n", EMPTY_GAME_TIMEOUT_SEC);
         game->running = false;
         return 0;
-
-      } else {
+      } /*else {    Len to spamuje klienta 
         int left_time = EMPTY_GAME_TIMEOUT_SEC - game->empty_time_ms / 1000;
         printf("[GAME] If nobody joins, game ends in %d sec\n", left_time);
-      }
+      }*/
     } else {
       game->empty_time_ms = 0;
     }  

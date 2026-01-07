@@ -90,13 +90,11 @@ void *render_thread_main(void *arg) {
         break;
     }
 
-    // AK SME V MENU (pauza alebo odchod), render thread sa má vypnúť
     if (c->state != CLIENT_IN_GAME) {
         break;
     }
 
     if (st.type == MSG_GAME_OVER) {
-        // hra skončila -> vráť do menu, ale klient nech beží ďalej
         printf("Koniec hry. Cas: %d\n", st.game_time);
         c->state = CLIENT_MENU;
         c->paused = false;

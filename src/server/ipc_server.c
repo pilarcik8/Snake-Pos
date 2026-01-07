@@ -32,7 +32,6 @@ int ipc_server_start(ipc_server_t *ipc, int port) {
   getsockname(ipc->server_fd, (struct sockaddr *)&addr, &alen);
   port = ntohs(addr.sin_port);
   ipc->listen_port = port;
-  printf("Server listening on port %d\n", port);  
 
   if (listen(ipc->server_fd, MAX_PLAYERS) < 0) {
     perror("listen");
