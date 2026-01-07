@@ -169,6 +169,7 @@ static void start_new_game_locked(const game_config_t *cfg) {
   // nastav game
   g.game.mode = cfg->mode;
   g.game.time_limit_sec = cfg->time_limit_sec;
+  g.game.allowed_multiplayer = cfg->allowed_multiplayer;
   game_init(&g.game);
 
   // nastav world
@@ -391,10 +392,20 @@ static void *ipc_loop(void *arg) {
     
     // potom prijme nove pripojenie a vytvori hada
     int new_slot = ipc_server_accept(ctx->ipc);
-    if (new_slot >= 0) {
-      int new_player_id = ctx->ipc->client_player_id[new_slot];
+      if (new_slot >= 0) {
+        int new_player_id = ctx->ipc->client_player_id[new_slot];
 
-      pthread_mutex_lock(&g.lock);
+        pthread_mutex_lock(&g.lock);
+
+        // SINGLEPLAYER: ak už niekto hrá, ďalších nepusti
+        if (ctx->server->game_running && !g.game.allowed_multiplayer && g.active_snakes >= 1) {
+
+        pthread_mutex_unlock(&g.lock);
+
+        // zavri socket novému klientovi
+        ipc_server_kick(ctx->ipc, new_slot);
+        continue;
+      }
       handle_new_connection_locked(new_player_id);
       pthread_mutex_unlock(&g.lock);
     }

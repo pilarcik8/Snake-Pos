@@ -134,5 +134,17 @@ void ipc_server_send_state(ipc_server_t *ipc, server_message_t *state) {
   pthread_mutex_unlock(&ipc->lock);
 }
 
+void ipc_server_kick(ipc_server_t *ipc, int slot) {
+  pthread_mutex_lock(&ipc->lock);
+
+  int fd = ipc->client_fds[slot];
+  if (fd > 0) close(fd);
+
+  ipc->client_fds[slot] = 0;
+  ipc->client_player_id[slot] = -1;
+
+  pthread_mutex_unlock(&ipc->lock);
+}
+
 
 

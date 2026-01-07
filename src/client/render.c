@@ -83,10 +83,10 @@ void *render_thread_main(void *arg) {
     server_message_t st;
     memset(&st, 0, sizeof(st));
 
+    // spojenie padlo alebo sme sa odpojili alebo hra je singleplayer
     if (!ipc_client_receive(&c->ipc, &st)) {
-        // spojenie padlo alebo sme sa odpojili
-        c->state = CLIENT_MENU;
-        c->paused = false;
+        printf("Spojenie so serverom ukončené\n");
+        c->running = false;
         break;
     }
 
