@@ -22,6 +22,8 @@ typedef struct {
   fruit_state_t fruit;
 
   pthread_mutex_t lock;
+
+  int join_freeze_ms;
 } global_t;
 
 // Kontext pre vlakna.
@@ -41,6 +43,7 @@ static void globals_init(void) {
 
   g.active_snakes = 0;
   g.pass_through_edges_en = true;
+  g.join_freeze_ms = 0;
 
   for (int i = 0; i < MAX_PLAYERS; i++) {
     g.slot_used[i] = false;
@@ -205,7 +208,6 @@ static void process_client_message_locked(int player_id, const client_message_t 
   if (msg->type == MSG_DISCONNECT) {
     handle_disconnect_locked(player_id);
   }
-
   else if (msg->type == MSG_INPUT && !g.snakes[slot].paused) {
     handle_input_locked(player_id, msg->direction);
   }
@@ -219,18 +221,22 @@ static void process_client_message_locked(int player_id, const client_message_t 
     start_new_game_locked(&msg->cfg);
   }
   else if (msg->type == MSG_CONNECT) {
-    if (slot >= 0) {
-      // hráč sa vracia do svojej hry
+    // hráč sa vracia do svojej hry
+    if (slot >= 0) {    
       if (g.snakes[slot].alive && g.snakes[slot].paused) {
         g.snakes[slot].paused = false;
         g.snakes[slot].resume_ms = PAUSE_DELAY_SEC * 1000; // 3 sekundy
+      }
+      return;
     }
-    return;
-  }
-
+    // nový hráč - multiplayer
+    if (!g.game.allowed_multiplayer && g.active_snakes > 0) {
+      return;
+    } 
     // nový hráč
-    if (g_server && g_server->game_running) {
-      handle_new_connection_locked(player_id);
+    if (g_server && g_server->game_running && g.game.allowed_multiplayer && g.active_snakes > 0) {
+        handle_new_connection_locked(player_id);
+        g.join_freeze_ms = PAUSE_DELAY_SEC * 1000; // všetci zastavený 3 sec
     }
   }
 }
@@ -316,6 +322,21 @@ static void *game_loop(void *arg) {
 
       break;
     }
+    // join freeze pre všetkých
+    if (g.join_freeze_ms > 0) {
+      g.join_freeze_ms -= SERVER_TICK_MS;
+      if (g.join_freeze_ms < 0) g.join_freeze_ms = 0;
+
+      // pošli state aby klient videl "stojí"
+      server_message_t state;
+      memset(&state, 0, sizeof(state));
+      build_state_locked(&state, g.game.elapsed_time_sec);
+
+      pthread_mutex_unlock(&g.lock);
+      ipc_server_send_state(ctx->ipc, &state);
+      continue;
+    }
+
 
     // Normálny tick:
       // - pauza
