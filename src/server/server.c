@@ -184,7 +184,7 @@ static void start_new_game_locked(const game_config_t *cfg) {
   } 
   else if (cfg->world_type == WORLD_WITH_OBSTACLES) {
     world_generate(&g.world, WORLD_WITH_OBSTACLES, 5); // 5%
-    g.pass_through_edges_en = false; // pri prekážkach typicky bez wrapu
+    g.pass_through_edges_en = false; // pri prekážkach typicky bez priepustnych stien
   } else {
     world_generate(&g.world, WORLD_MAP_LOADED, 0); //NEIMPLEMENTOVANE
   }
@@ -203,7 +203,7 @@ static void start_new_game_locked(const game_config_t *cfg) {
 }
 
 static void process_client_message_locked(int player_id, const client_message_t *msg) {
-  int slot = find_slot_by_player_id_locked(player_id); // slot sa == indexu pola
+  int slot = find_slot_by_player_id_locked(player_id); 
 
   if (msg->type == MSG_DISCONNECT) {
     handle_disconnect_locked(player_id);
@@ -258,7 +258,9 @@ static void kill_snake_locked(int idx) {
   if (!g.snakes[idx].alive) return;
 
   g.snakes[idx].alive = false;
-  if (g.active_snakes > 0) g.active_snakes--;
+  if (g.active_snakes > 0) {
+    g.active_snakes--;
+  }
 
   fruit_sync_locked();
     // TODO: Urobit zapis bodov a casu hada po vypadnuti hraca.
@@ -336,6 +338,7 @@ static void *game_loop(void *arg) {
     }
     // join freeze pre všetkých
     if (g.join_freeze_ms > 0) {
+      sleep(3);
       g.join_freeze_ms -= SERVER_TICK_MS;
       if (g.join_freeze_ms < 0) g.join_freeze_ms = 0;
 
@@ -439,7 +442,6 @@ static void *ipc_loop(void *arg) {
         ipc_server_kick(ctx->ipc, new_slot);
         continue;
       }
-      pthread_mutex_lock(&g.lock);
       handle_new_connection_locked(new_player_id);
       pthread_mutex_unlock(&g.lock);
     }
