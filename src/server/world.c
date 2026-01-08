@@ -139,61 +139,63 @@ static bool generate_obstacles_connected(world_t *w, int obstacle_percent) {
 }
 
 bool world_generate(world_t *w, world_type_t kind, int obstacle_percent) {
-    if (!w) return false;
+  if (!w) return false;
 
-    if (kind == WORLD_NO_OBSTACLES) {
-        world_clear(w);
-        return true;
-    }
+  if (kind == WORLD_NO_OBSTACLES) {
+    world_clear(w);
+    return true;
+  }
 
-    return generate_obstacles_connected(w, obstacle_percent);
+  return generate_obstacles_connected(w, obstacle_percent);
 }
 
 // načítanie sveta zo súboru
 // ASCII: '#' = prekážka, '.' = voľné 
 
 static int line_len_no_nl(const char *s) {
-    int n = 0;
-    while (s[n] && s[n] != '\n' && s[n] != '\r') n++;
-    return n;
+  int n = 0;
+  while (s[n] && s[n] != '\n' && s[n] != '\r') n++;
+  return n;
 }
 
 bool world_load_from_file(world_t *w, const char *path) {
-    if (!w || !path) return false;
+  if (!w || !path) return false;
 
-    FILE *f = fopen(path, "r");
-    if (!f) return false;
+  FILE *f = fopen(path, "r");
+  if (!f) {
+    perror(path);
+    return false;
+  }
 
-    char lines[MAX_WORLD_HEIGHT][MAX_WORLD_WIDTH + 4];
-    int height = 0;
-    int width = -1;
+  char lines[MAX_WORLD_HEIGHT][MAX_WORLD_WIDTH + 4];
+  int height = 0;
+  int width = -1;
 
-    while (height < MAX_WORLD_HEIGHT && fgets(lines[height], sizeof(lines[height]), f)) {
-        int len = line_len_no_nl(lines[height]);
-        if (len == 0) continue; // ignoruj prázdne riadky
+  while (height < MAX_WORLD_HEIGHT && fgets(lines[height], sizeof(lines[height]), f)) {
+    int len = line_len_no_nl(lines[height]);
+    if (len == 0) continue; // ignoruj prázdne riadky
 
-        if (width == -1) width = len;
-        if (len != width) { fclose(f); return false; }
-        if (width > MAX_WORLD_WIDTH) { fclose(f); return false; }
+    if (width == -1) width = len;
+    if (len != width) { fclose(f); return false; }
+    if (width > MAX_WORLD_WIDTH) { fclose(f); return false; }
 
-        height++;
+    height++;
+  }
+
+  fclose(f);
+
+  if (width <= 0 || height <= 0) return false;
+  if (!world_init(w, width, height)) return false;
+
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      char c = lines[y][x];
+      if (c == '#') w->cells[y][x] = CELL_WALL;
+      else if (c == '.') w->cells[y][x] = CELL_EMPTY;
+      else return false;
     }
-
-    fclose(f);
-
-    if (width <= 0 || height <= 0) return false;
-    if (!world_init(w, width, height)) return false;
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            char c = lines[y][x];
-            if (c == '#') w->cells[y][x] = CELL_WALL;
-            else if (c == '.') w->cells[y][x] = CELL_EMPTY;
-            else return false;
-        }
-    }
-
-    return true;
+  }
+  return true;
 }
 
 

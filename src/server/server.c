@@ -157,8 +157,6 @@ static void handle_input_locked(int player_id, direction_t dir) {
 
 // tvorba novej hry
 static void start_new_game_locked(const game_config_t *cfg) {
-  if (cfg->map.width <= 0 || cfg->map.height <= 0) return;
-
   // reset hry
   g.active_snakes = 0;
   for (int i = 0; i < MAX_PLAYERS; i++) {
@@ -178,22 +176,27 @@ static void start_new_game_locked(const game_config_t *cfg) {
 
   // nastav world
   if (cfg->map.type == WORLD_MAP_LOADED) {
-    g.pass_through_edges_en = false;
+    // ak nenacita mapu z suboru, vytvori prazdnu mapu z ktorej sa da dostat do menu
     if (!world_load_from_file(&g.world, cfg->map.map_path)) {
-      printf("Failed to load map\n");
-      return;
+      g.world.height = 0;
+      g.world.width = 0;
+      g.pass_through_edges_en = true;
+      world_generate(&g.world, WORLD_NO_OBSTACLES, 0);
     }
-  }
-  else if (cfg->map.type == WORLD_NO_OBSTACLES) {
-    world_generate(&g.world, WORLD_NO_OBSTACLES, 0);
-    g.pass_through_edges_en = true;
-  } 
-  else if (cfg->map.type == WORLD_WITH_OBSTACLES) {
-    world_generate(&g.world, WORLD_WITH_OBSTACLES, 5); // 5%
     g.pass_through_edges_en = false;
   } else {
-    printf("Uknown world type\n");
-    return;
+    world_init(&g.world, cfg->map.width, cfg->map.height);
+    if (cfg->map.type == WORLD_NO_OBSTACLES) {
+      g.pass_through_edges_en = true;
+      world_generate(&g.world, WORLD_NO_OBSTACLES, 0);
+    } 
+    else if (cfg->map.type == WORLD_WITH_OBSTACLES) {
+      g.pass_through_edges_en = false;
+      world_generate(&g.world, WORLD_WITH_OBSTACLES, 5); // 5%
+    } else {
+      printf("Uknown world type\n");
+      return;
+    }
   }
   
   // pod g.lock

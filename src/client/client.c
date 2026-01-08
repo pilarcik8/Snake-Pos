@@ -122,8 +122,7 @@ static void send_create_game(client_t *c) {
   msg.cfg.map.type = world_type_choice();
 
   /* RANDOM / EMPTY MAP */
-  if (msg.cfg.map.type == WORLD_WITH_OBSTACLES ||
-    msg.cfg.map.type == WORLD_NO_OBSTACLES) {
+  if (msg.cfg.map.type == WORLD_WITH_OBSTACLES || msg.cfg.map.type == WORLD_NO_OBSTACLES) {
 
     printf("Write width of the map (min 10):\n> ");
     while (!read_int_safe(&msg.cfg.map.width) ||
@@ -139,7 +138,7 @@ static void send_create_game(client_t *c) {
   }
 
   /* MAP FROM FILE */
-  if (msg.cfg.map.type == WORLD_MAP_LOADED) {
+  else if (msg.cfg.map.type == WORLD_MAP_LOADED) {
     printf("Write map file path:\n> ");
     fflush(stdout);
 
