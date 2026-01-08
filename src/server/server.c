@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 // Globalny stav servera.
 typedef struct {
@@ -23,7 +24,7 @@ typedef struct {
 
   pthread_mutex_t lock;
 
-  int join_freeze_ms;
+  bool freeze; 
 } global_t;
 
 // Kontext pre vlakna.
@@ -43,7 +44,7 @@ static void globals_init(void) {
 
   g.active_snakes = 0;
   g.pass_through_edges_en = true;
-  g.join_freeze_ms = 0;
+  g.freeze = false;
 
   for (int i = 0; i < MAX_PLAYERS; i++) {
     g.slot_used[i] = false;
@@ -126,6 +127,7 @@ static void handle_new_connection_locked(int player_id) {
 
   g.active_snakes++;
   fruit_sync_locked();
+  sleep(3);
 }
 
 static void handle_disconnect_locked(int player_id) {
@@ -239,17 +241,16 @@ static void process_client_message_locked(int player_id, const client_message_t 
     }
 
     // nový hráč:
-    // singleplayer: ak už niekto hrá, nepusti
     if (!g.game.allowed_multiplayer && g.active_snakes > 0) {
-      return; // (ideálne poslať klientovi "reject", ale zatiaľ stačí)
+      return;
     }
-
-    // ak už v hre niekto je, freeze pre všetkých 3s
-    if (g.active_snakes > 0) {
-      g.join_freeze_ms = PAUSE_DELAY_SEC * 1000;
-    }
-
+    int before = g.active_snakes;          // koľko bolo pred pridaním
     handle_new_connection_locked(player_id);
+
+    if (before > 0) {                     // ak už niekto hral, freeze pre všetkých
+      g.freeze = PAUSE_DELAY_SEC * 1000;
+    }
+    return;
   }
 }
 
@@ -336,22 +337,6 @@ static void *game_loop(void *arg) {
 
       break;
     }
-    // join freeze pre všetkých
-    if (g.join_freeze_ms > 0) {
-      sleep(3);
-      g.join_freeze_ms -= SERVER_TICK_MS;
-      if (g.join_freeze_ms < 0) g.join_freeze_ms = 0;
-
-      // pošli state aby klient videl "stojí"
-      server_message_t state;
-      memset(&state, 0, sizeof(state));
-      build_state_locked(&state, g.game.elapsed_time_sec);
-
-      pthread_mutex_unlock(&g.lock);
-      ipc_server_send_state(ctx->ipc, &state);
-      continue;
-    }
-
 
     // Normálny tick:
       // - pauza
@@ -396,6 +381,12 @@ static void *game_loop(void *arg) {
     ipc_server_send_state(ctx->ipc, &state);
   }
 
+  // globalna pauza (MSG_CONNECT)
+  if (g.freeze) {
+    sleep(PAUSE_DELAY_SEC);
+    g.freeze = false;
+  }
+
   pthread_mutex_lock(&g.lock);
   ctx->server->game_running = false;
   pthread_mutex_unlock(&g.lock);
@@ -429,20 +420,16 @@ static void *ipc_loop(void *arg) {
     // potom prijme nove pripojenie a vytvori hada
     int new_slot = ipc_server_accept(ctx->ipc);
       if (new_slot >= 0) {
-        int new_player_id = ctx->ipc->client_player_id[new_slot];
-
         pthread_mutex_lock(&g.lock);
 
         // SINGLEPLAYER: ak už niekto hrá, ďalších nepusti
         if (ctx->server->game_running && !g.game.allowed_multiplayer && g.active_snakes >= 1) {
+          pthread_mutex_unlock(&g.lock);
 
-        pthread_mutex_unlock(&g.lock);
-
-        // zavri socket novému klientovi
-        ipc_server_kick(ctx->ipc, new_slot);
-        continue;
+          // zavri socket novému klientovi
+          ipc_server_kick(ctx->ipc, new_slot);
+          continue;
       }
-      handle_new_connection_locked(new_player_id);
       pthread_mutex_unlock(&g.lock);
     }
   }
