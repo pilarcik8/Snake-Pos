@@ -23,8 +23,8 @@ typedef struct {
   fruit_state_t fruit;
 
   pthread_mutex_t lock;
-
-  bool freeze; 
+  
+  int join_freeze_ms;
 } global_t;
 
 // Kontext pre vlakna.
@@ -44,7 +44,7 @@ static void globals_init(void) {
 
   g.active_snakes = 0;
   g.pass_through_edges_en = true;
-  g.freeze = false;
+  g.join_freeze_ms = 0;
 
   for (int i = 0; i < MAX_PLAYERS; i++) {
     g.slot_used[i] = false;
@@ -127,7 +127,6 @@ static void handle_new_connection_locked(int player_id) {
 
   g.active_snakes++;
   fruit_sync_locked();
-  sleep(3);
 }
 
 static void handle_disconnect_locked(int player_id) {
@@ -234,23 +233,20 @@ static void process_client_message_locked(int player_id, const client_message_t 
       if (g.snakes[slot].alive && g.snakes[slot].paused) {
         g.snakes[slot].paused = false;
         g.snakes[slot].resume_ms = PAUSE_DELAY_SEC * 1000;
-        return;
       }
       // inak už je v hre (duplicitný connect) -> ignoruj
       return;
     }
 
     // nový hráč:
-    if (!g.game.allowed_multiplayer && g.active_snakes > 0) {
-      return;
-    }
-    int before = g.active_snakes;          // koľko bolo pred pridaním
+    if (!g.game.allowed_multiplayer && g.active_snakes > 0) return;
+
+    int hadPlayers = (g.active_snakes > 0);
     handle_new_connection_locked(player_id);
 
-    if (before > 0) {                     // ak už niekto hral, freeze pre všetkých
-      g.freeze = PAUSE_DELAY_SEC * 1000;
+    if (hadPlayers) {
+      g.join_freeze_ms = PAUSE_DELAY_SEC * 1000; // 3s freeze pre všetkých
     }
-    return;
   }
 }
 
@@ -339,7 +335,6 @@ static void *game_loop(void *arg) {
     }
 
     // Normálny tick:
-      // - pauza
     for (int i = 0; i < MAX_PLAYERS; i++) {
       if (!g.slot_used[i]) continue;
       if (!g.snakes[i].alive) continue;
@@ -353,7 +348,21 @@ static void *game_loop(void *arg) {
         if (g.snakes[i].resume_ms < 0) g.snakes[i].resume_ms = 0;
         continue;
       }
-      
+      // globalna pauza -> 3s kazdy stojí
+      if (g.join_freeze_ms > 0) {
+        g.join_freeze_ms -= SERVER_TICK_MS;
+
+        if (g.join_freeze_ms < 0) g.join_freeze_ms = 0;
+
+        server_message_t state;
+        memset(&state, 0, sizeof(state));
+        build_state_locked(&state, g.game.elapsed_time_sec);
+
+        pthread_mutex_unlock(&g.lock);
+        ipc_server_send_state(ctx->ipc, &state);
+        continue;
+      }
+
       // - pohyb hadov
       snake_move(&g.snakes[i], g.world.width, g.world.height, g.pass_through_edges_en);
     }
@@ -379,12 +388,6 @@ static void *game_loop(void *arg) {
     // odomkni globálny stav a pošli update klientom
     pthread_mutex_unlock(&g.lock);
     ipc_server_send_state(ctx->ipc, &state);
-  }
-
-  // globalna pauza (MSG_CONNECT)
-  if (g.freeze) {
-    sleep(PAUSE_DELAY_SEC);
-    g.freeze = false;
   }
 
   pthread_mutex_lock(&g.lock);
