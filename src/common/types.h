@@ -9,8 +9,8 @@ typedef enum {
 } direction_t;
 
 typedef enum {
-  GAME_STANDARD,
-  GAME_TIMED
+  GAME_STANDARD = 1,
+  GAME_TIMED = 2
 } game_mode_t;
 
 typedef enum {
@@ -26,9 +26,9 @@ typedef struct {
 } position_t;
 
 typedef enum {
-  WORLD_NO_OBSTACLES = 0,
-  WORLD_WITH_OBSTACLES = 1,
-  WORLD_MAP_LOADED = 2
+  WORLD_NO_OBSTACLES = 1,
+  WORLD_WITH_OBSTACLES = 2,
+  WORLD_MAP_LOADED = 3
 } world_type_t;
 
 #endif

@@ -20,6 +20,16 @@ bool client_connect_to(client_t *c, const char *address, int port) {
   return ipc_client_connect(&c->ipc, address, port);
 }
 
+static int read_int_safe(int *out) {
+  int rc = scanf("%d", out);
+  if (rc == 1) return 1;
+
+  // vyhoď zbytok riadku
+  int ch;
+  while ((ch = getchar()) != '\n' && ch != EOF) {}
+  return 0;
+}
+
 static int menu_read_choice(void) {
   int c = 0;
   printf("\n=== MENU ===\n");
@@ -30,10 +40,54 @@ static int menu_read_choice(void) {
   printf("> ");
   fflush(stdout);
 
-  if (scanf("%d", &c) != 1) {
-    int ch;
-    while ((ch = getchar()) != '\n' && ch != EOF) {}
-    return 0;
+  while (!read_int_safe(&c) || c < 1 || c > 4) {
+    printf("Invalid value, try again:\n> ");
+  }
+  return c;
+}
+
+static int barrier_choice(void) {
+  int c = 0;
+
+  printf("Choose game type:\n");
+  printf("1) Game word without barries\n");
+  printf("2) Game word with barries - random\n");
+  printf("3) Game word inputed from a file\n");
+  printf("> ");
+
+  while (!read_int_safe(&c) ||  c < 1 || c > 3) {
+    printf("Invalid value, try again:\n> ");
+  }
+  return c;
+}
+
+static int world_type_choice(void) {
+  int c = 0;
+
+  printf("Choose game mode:\n");
+  printf("1) Standard\n");
+  printf("2) Timed\n");
+  printf("> ");
+
+  while (!read_int_safe(&c) ||  c < 1 || c > 3) {
+    printf("Invalid value, try again:\n> ");
+  }
+  return c;
+}
+
+static bool multiplayer_choice(void) {
+  int c = 0;
+  printf("Do you want to enable multiplayer?\n");
+  printf("1) Yes\n");
+  printf("2) No\n");
+  printf("> ");
+
+  while (!read_int_safe(&c) ||  c < 1 || c > 2) {
+    printf("Invalid value, try again:\n> ");
+  }
+
+  if (c == 2) {
+    c = 0;
   }
   return c;
 }
@@ -51,60 +105,40 @@ static void send_create_game(client_t *c) {
   memset(&msg, 0, sizeof(msg));
   msg.type = MSG_CREATE_GAME;
 
-  char input = ' ';
+  msg.cfg.mode = world_type_choice();
   int time_limit_sec = 0;
+  if (msg.cfg.mode == GAME_TIMED) {
+    printf("Write time limit in seconds:\n> ");
 
-  printf("Choose game mode:\n");
-  printf("s) Standart\n");
-  printf("t) Timed\n");
-
-  // zjedz whitespace po scanf v menu
-  do { input = (char)getchar(); } while (input == '\n' || input == '\r' || input == ' ' || input == '\t');
-
-  while (input != 's' && input != 't') {
-    input = (char)getchar();
-  }
-
-  msg.cfg.mode = GAME_STANDARD;
-  if (input == 't') {
-    msg.cfg.mode = GAME_TIMED;
-    printf("Write time limit in seconds:\n");
     while (time_limit_sec <= 0) {
       scanf("%d", &time_limit_sec);
     }
   }
-
   msg.cfg.time_limit_sec = time_limit_sec;
 
-  int choice_mode = 0;
-  printf("Choose game type:\n");
-  printf("1) Game word without barries\n");
-  printf("2) Game word with barries\n");
-  printf("3) Game word inputed from a file\n");
+  msg.cfg.world_type = barrier_choice();
 
-  while (choice_mode < 1 || choice_mode > 3) {
-    scanf("%d", &choice_mode);
+  msg.cfg.allowed_multiplayer = multiplayer_choice();
+
+  int width = 0;
+  int height = 0;
+
+  if (msg.cfg.world_type == WORLD_WITH_OBSTACLES || msg.cfg.world_type == WORLD_NO_OBSTACLES) {
+    printf("Write width of the map (min 10):\n> ");
+
+    while (!read_int_safe(&width) || width < 10) {
+      printf("Invalid value, try again:\n> ");
+    }
+
+    printf("Write height of the map (min 10):\n> ");
+
+    while (!read_int_safe(&height) || height < 10) {
+      printf("Invalid value, try again:\n> ");
+    }
   }
-
-  if (choice_mode == 1) msg.cfg.world_type = WORLD_NO_OBSTACLES;
-  else if (choice_mode == 2) msg.cfg.world_type = WORLD_WITH_OBSTACLES;
-  else {
-    printf("Not implemented yet\n");
-    msg.cfg.world_type = WORLD_NO_OBSTACLES;
-  }
-
-  char choice_multipl = ' ';
-  printf("Do you want to enable multiplayer? (y/n)\n");
-  do { choice_multipl = (char)getchar(); } while (choice_multipl == '\n' || choice_multipl == '\r' || choice_multipl == ' ' || choice_multipl == '\t');
-
-  while (choice_multipl != 'y' && choice_multipl != 'n') {
-    choice_multipl = (char)getchar();
-  }
-
-  msg.cfg.allowed_multiplayer = (choice_multipl == 'y');
-
-  msg.cfg.width = 50;
-  msg.cfg.height = 30;
+  msg.cfg.width = width;
+  msg.cfg.height = height;
+  
 
   ipc_client_send(&c->ipc, &msg);
 }

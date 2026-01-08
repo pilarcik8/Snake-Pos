@@ -49,20 +49,6 @@ void *input_thread_main(void *arg) {
     if (!read_key(&key)) continue;
     if (c->paused) continue;
 
-    if (key == 'q') {
-      client_message_t msg;
-      memset(&msg, 0, sizeof(msg));
-      msg.type = MSG_DISCONNECT;
-
-      ipc_client_send(&c->ipc, &msg);
-      ipc_client_close(&c->ipc);   // definitívny odchod = zmizne had
-
-      c->paused = false;
-      c->state = CLIENT_MENU;
-
-      break;
-    }
-
     if (key == 'p') {
       client_message_t msg;
       msg.type = MSG_PAUSE;

@@ -54,7 +54,7 @@ int ipc_server_start(ipc_server_t *ipc, int port) {
 
   ipc->next_player_id = 1;
 
-  printf("Server listening on port %d\n", port);
+  printf("\n[SERVER] Listening on port %d\n", port);
   return 0;
 }
 
@@ -83,7 +83,7 @@ int ipc_server_accept(ipc_server_t *ipc) {
 
   ipc->client_fds[slot] = client_fd;
   ipc->client_player_id[slot] = ipc->next_player_id++;
-  printf("Client connected (slot %d, id %d)\n", slot, ipc->client_player_id[slot]);
+  printf("\n[SERVER] Client connected (slot %d, id %d)\n", slot, ipc->client_player_id[slot]);
 
   pthread_mutex_unlock(&ipc->lock);
   return slot;

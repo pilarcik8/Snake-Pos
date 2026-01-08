@@ -12,7 +12,7 @@ static void draw_state(const server_message_t *st) {
   clear_screen();
 
   printf("Cas: %d | Hracov: %d\n", st->game_time, st->player_count);
-  printf("WASD pohyb | p pauza | q odchod\n\n");
+  printf("WASD pohyb | p pauza\n\n");
 
   const int W = st->width;
   const int H = st->height;
@@ -85,7 +85,7 @@ void *render_thread_main(void *arg) {
 
     // spojenie padlo alebo sme sa odpojili alebo hra je singleplayer
     if (!ipc_client_receive(&c->ipc, &st)) {
-        printf("Spojenie so serverom ukončené\n");
+        printf("[Client] Spojenie so serverom ukončené\n");
         c->running = false;
         break;
     }
@@ -95,7 +95,7 @@ void *render_thread_main(void *arg) {
     }
 
     if (st.type == MSG_GAME_OVER) {
-        printf("Koniec hry. Cas: %d\n", st.game_time);
+        printf("[Client] Koniec hry. Cas: %d\n", st.game_time);
         c->state = CLIENT_MENU;
         c->paused = false;
         break;
