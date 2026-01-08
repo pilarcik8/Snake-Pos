@@ -208,7 +208,9 @@ static void process_client_message_locked(int player_id, const client_message_t 
   if (msg->type == MSG_DISCONNECT) {
     handle_disconnect_locked(player_id);
   }
-  else if (msg->type == MSG_INPUT && !g.snakes[slot].paused) {
+  else if (msg->type == MSG_INPUT) {
+    if (slot < 0) return;
+    if (g.snakes[slot].paused) return;
     handle_input_locked(player_id, msg->direction);
   }
   else if (msg->type == MSG_PAUSE) {
@@ -221,23 +223,33 @@ static void process_client_message_locked(int player_id, const client_message_t 
     start_new_game_locked(&msg->cfg);
   }
   else if (msg->type == MSG_CONNECT) {
-    // hráč sa vracia do svojej hry
-    if (slot >= 0) {    
+    // ak hra ešte nebeží, ignoruj (alebo si to ošetri podľa dizajnu)
+    if (!(g_server && g_server->game_running)) return;
+
+    // existuje slot?
+    if (slot >= 0) {
+      // je to návrat z pauzy?
       if (g.snakes[slot].alive && g.snakes[slot].paused) {
         g.snakes[slot].paused = false;
-        g.snakes[slot].resume_ms = PAUSE_DELAY_SEC * 1000; // 3 sekundy
+        g.snakes[slot].resume_ms = PAUSE_DELAY_SEC * 1000;
+        return;
       }
+      // inak už je v hre (duplicitný connect) -> ignoruj
       return;
     }
-    // nový hráč - multiplayer
+
+    // nový hráč:
+    // singleplayer: ak už niekto hrá, nepusti
     if (!g.game.allowed_multiplayer && g.active_snakes > 0) {
-      return;
-    } 
-    // nový hráč
-    if (g_server && g_server->game_running && g.game.allowed_multiplayer && g.active_snakes > 0) {
-        handle_new_connection_locked(player_id);
-        g.join_freeze_ms = PAUSE_DELAY_SEC * 1000; // všetci zastavený 3 sec
+      return; // (ideálne poslať klientovi "reject", ale zatiaľ stačí)
     }
+
+    // ak už v hre niekto je, freeze pre všetkých 3s
+    if (g.active_snakes > 0) {
+      g.join_freeze_ms = PAUSE_DELAY_SEC * 1000;
+    }
+
+    handle_new_connection_locked(player_id);
   }
 }
 
@@ -427,6 +439,7 @@ static void *ipc_loop(void *arg) {
         ipc_server_kick(ctx->ipc, new_slot);
         continue;
       }
+      pthread_mutex_lock(&g.lock);
       handle_new_connection_locked(new_player_id);
       pthread_mutex_unlock(&g.lock);
     }
