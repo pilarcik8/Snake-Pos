@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define MAX_PLAYERS 10
+#define MAX_PLAYERS 3
 #define MAX_SNAKE_LENGTH 256
 #define MAX_WORLD_WIDTH 100
 #define MAX_WORLD_HEIGHT 100

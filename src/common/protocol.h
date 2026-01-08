@@ -18,11 +18,18 @@ typedef enum {
 } message_type_t;
 
 typedef struct {
+  world_type_t type;        // WORLD_NO_OBSTACLES, WORLD_WITH_OBSTACLES, WORLD_MAP_LOADED
+  int width;                // použivam pri generovaní
+  int height;               // použivam pri generovaní
+  char map_path[256];       // pri WORLD_MAP_LOADED
+} map_config_t;
+
+
+typedef struct {
   game_mode_t mode;         // GAME_STANDARD / GAME_TIMED
+  map_config_t map;
+
   int time_limit_sec;       // len ak TIMED (inak 0)
-  world_type_t world_type;  // bez/so prekážkami, z suboru
-  int width;                // rozmery (ak nenačítavaš zo súboru)
-  int height;
   bool allowed_multiplayer;
 } game_config_t;
 

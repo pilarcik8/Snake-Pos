@@ -157,7 +157,7 @@ static void handle_input_locked(int player_id, direction_t dir) {
 
 // tvorba novej hry
 static void start_new_game_locked(const game_config_t *cfg) {
-  if (cfg->width <= 0 || cfg->height <= 0) return;
+  if (cfg->map.width <= 0 || cfg->map.height <= 0) return;
 
   // reset hry
   g.active_snakes = 0;
@@ -177,17 +177,23 @@ static void start_new_game_locked(const game_config_t *cfg) {
   game_init(&g.game);
 
   // nastav world
-  world_init(&g.world, cfg->width, cfg->height);
-
-  if (cfg->world_type == WORLD_NO_OBSTACLES) {
+  if (cfg->map.type == WORLD_MAP_LOADED) {
+    g.pass_through_edges_en = false;
+    if (!world_load_from_file(&g.world, cfg->map.map_path)) {
+      printf("Failed to load map\n");
+      return;
+    }
+  }
+  else if (cfg->map.type == WORLD_NO_OBSTACLES) {
     world_generate(&g.world, WORLD_NO_OBSTACLES, 0);
     g.pass_through_edges_en = true;
   } 
-  else if (cfg->world_type == WORLD_WITH_OBSTACLES) {
+  else if (cfg->map.type == WORLD_WITH_OBSTACLES) {
     world_generate(&g.world, WORLD_WITH_OBSTACLES, 5); // 5%
-    g.pass_through_edges_en = false; // pri prekážkach typicky bez priepustnych stien
+    g.pass_through_edges_en = false;
   } else {
-    world_generate(&g.world, WORLD_MAP_LOADED, 0); //NEIMPLEMENTOVANE
+    printf("Uknown world type\n");
+    return;
   }
   
   // pod g.lock

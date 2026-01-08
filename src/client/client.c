@@ -3,6 +3,7 @@
 #include "client.h"
 #include "input.h"
 #include "render.h"
+#include "../common/config.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -46,7 +47,7 @@ static int menu_read_choice(void) {
   return c;
 }
 
-static int barrier_choice(void) {
+static int world_type_choice(void) {
   int c = 0;
 
   printf("Choose game type:\n");
@@ -61,7 +62,7 @@ static int barrier_choice(void) {
   return c;
 }
 
-static int world_type_choice(void) {
+static int game_type_choice(void) {
   int c = 0;
 
   printf("Choose game mode:\n");
@@ -105,41 +106,58 @@ static void send_create_game(client_t *c) {
   memset(&msg, 0, sizeof(msg));
   msg.type = MSG_CREATE_GAME;
 
-  msg.cfg.mode = world_type_choice();
-  int time_limit_sec = 0;
+  /* GAME MODE */
+  msg.cfg.mode = game_type_choice();
   if (msg.cfg.mode == GAME_TIMED) {
     printf("Write time limit in seconds:\n> ");
-
-    while (time_limit_sec <= 0) {
-      scanf("%d", &time_limit_sec);
+    while (!read_int_safe(&msg.cfg.time_limit_sec) || msg.cfg.time_limit_sec <= 0) {
+      printf("Invalid value, try again:\n> ");
     }
   }
-  msg.cfg.time_limit_sec = time_limit_sec;
 
-  msg.cfg.world_type = barrier_choice();
-
+  /* MULTIPLAYER */
   msg.cfg.allowed_multiplayer = multiplayer_choice();
 
-  int width = 0;
-  int height = 0;
+  /* MAP TYPE */
+  msg.cfg.map.type = world_type_choice();
 
-  if (msg.cfg.world_type == WORLD_WITH_OBSTACLES || msg.cfg.world_type == WORLD_NO_OBSTACLES) {
+  /* RANDOM / EMPTY MAP */
+  if (msg.cfg.map.type == WORLD_WITH_OBSTACLES ||
+    msg.cfg.map.type == WORLD_NO_OBSTACLES) {
+
     printf("Write width of the map (min 10):\n> ");
-
-    while (!read_int_safe(&width) || width < 10) {
+    while (!read_int_safe(&msg.cfg.map.width) ||
+              msg.cfg.map.width < 10 || msg.cfg.map.width > MAX_WORLD_WIDTH) {
       printf("Invalid value, try again:\n> ");
     }
 
     printf("Write height of the map (min 10):\n> ");
-
-    while (!read_int_safe(&height) || height < 10) {
+    while (!read_int_safe(&msg.cfg.map.height) ||
+               msg.cfg.map.height < 10 || msg.cfg.map.height > MAX_WORLD_HEIGHT) {
       printf("Invalid value, try again:\n> ");
     }
   }
-  msg.cfg.width = width;
-  msg.cfg.height = height;
-  
 
+  /* MAP FROM FILE */
+  if (msg.cfg.map.type == WORLD_MAP_LOADED) {
+    printf("Write map file path:\n> ");
+    fflush(stdout);
+
+    /* zjedz zvyšný newline zo stdin */
+    int ch;
+    while ((ch = getchar()) != '\n' && ch != EOF) {}
+
+    if (!fgets(msg.cfg.map.map_path, sizeof(msg.cfg.map.map_path), stdin)) {
+      printf("Failed to read path\n");
+      return;
+    }
+
+    /* odstránenie \n */
+    size_t len = strlen(msg.cfg.map.map_path);
+    if (len > 0 && msg.cfg.map.map_path[len - 1] == '\n') {
+      msg.cfg.map.map_path[len - 1] = '\0';
+    }
+  }
   ipc_client_send(&c->ipc, &msg);
 }
 

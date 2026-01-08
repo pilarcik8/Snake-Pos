@@ -83,7 +83,7 @@ int ipc_server_accept(ipc_server_t *ipc) {
 
   ipc->client_fds[slot] = client_fd;
   ipc->client_player_id[slot] = ipc->next_player_id++;
-  printf("\n[SERVER] Client connected (slot %d, id %d)\n", slot, ipc->client_player_id[slot]);
+  //printf("\n[SERVER] Client connected (slot %d, id %d)\n", slot, ipc->client_player_id[slot]);
 
   pthread_mutex_unlock(&ipc->lock);
   return slot;
