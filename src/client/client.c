@@ -162,10 +162,18 @@ static void send_create_game(client_t *c) {
 
 static int spawn_server_and_get_port(void) {
   int pfd[2];
-  if (pipe(pfd) < 0) { perror("pipe"); return -1; }
+  if (pipe(pfd) < 0) { 
+    perror("pipe"); 
+    return -1; 
+  }
 
   pid_t pid = fork();
-  if (pid < 0) { perror("fork"); close(pfd[0]); close(pfd[1]); return -1; }
+  if (pid < 0) { 
+    perror("fork"); 
+    close(pfd[0]); 
+    close(pfd[1]); 
+    return -1; 
+  }
 
   if (pid == 0) {
     close(pfd[0]);

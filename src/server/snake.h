@@ -16,6 +16,11 @@ typedef struct {
 
   bool paused;        // hráč je v menu => had stojí
   int resume_ms;      // po návrate čaká 3000ms
+  
+  int join_time_sec;   // kedy vstúpil do hry
+  int death_time_sec;  // kedy zomrel (alebo -1 ak žije)
+  
+  int joined_at_sec;   // kedy sa had pripojil (game elapsed sec)
 } snake_t;
 
 void snake_init(snake_t *s, int player_id, position_t start);

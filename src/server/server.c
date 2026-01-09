@@ -121,6 +121,7 @@ static void handle_new_connection_locked(int player_id) {
   position_t spawn;
   if (!pick_spawn_locked(&spawn)) return;
 
+  g.snakes[slot].joined_at_sec = g.game.elapsed_time_sec;
   g.slot_used[slot] = true;
   snake_init(&g.snakes[slot], player_id, spawn);
   g.snakes[slot].alive = true;
@@ -259,17 +260,45 @@ static void process_client_message_locked(int player_id, const client_message_t 
   }
 }
 
+static int find_ipc_slot_by_player_id(ipc_server_t *ipc, int player_id) {
+  for (int i = 0; i < MAX_PLAYERS; i++) {
+    if (ipc->client_player_id[i] == player_id) return i;
+  }
+  return -1;
+}
+
+void ipc_server_send_to_slot(ipc_server_t *ipc, int slot, const server_message_t *msg) {
+  int fd = ipc->client_fds[slot];
+  if (fd <= 0) return;
+  send(fd, msg, sizeof(*msg), 0);
+}
+
 static void kill_snake_locked(int idx) {
   if (!g.slot_used[idx]) return;
   if (!g.snakes[idx].alive) return;
 
-  g.snakes[idx].alive = false;
-  if (g.active_snakes > 0) {
-    g.active_snakes--;
-  }
+  int pid = g.snakes[idx].player_id;
+  int score = g.snakes[idx].score;
+  int t = g.game.elapsed_time_sec - g.snakes[idx].joined_at_sec;
 
+  // označ hráča ako mŕtveho
+  g.snakes[idx].alive = false;
+  g.active_snakes--;
+
+  server_message_t m;
+  memset(&m, 0, sizeof(m));
+  m.type = MSG_PLAYER_OVER;
+  m.over_player_id = pid;
+  m.over_score = score;
+  m.over_time_in_game = t;
+
+  // pošli len jemu
+  int ipc_slot = find_ipc_slot_by_player_id(g_ipc, pid);
+  if (ipc_slot >= 0) {
+    ipc_server_send_to_slot(g_ipc, ipc_slot, &m);
+  }
   fruit_sync_locked();
-    // TODO: Urobit zapis bodov a casu hada po vypadnuti hraca.
+   
 }
 
 // tvorba spravy pre render klienta
@@ -289,7 +318,11 @@ static void build_state_locked(server_message_t *out, int game_time) {
     out->snakes[i].length = g.snakes[i].length;
     out->snakes[i].alive = g.snakes[i].alive;
     out->snakes[i].score = g.snakes[i].score;
-
+    if (g.snakes[i].player_id == -1) {
+      out->snakes[i].time_in_game_sec = 0;
+    } else { 
+      out->snakes[i].time_in_game_sec = g.game.elapsed_time_sec - g.snakes[i].joined_at_sec;
+    }
     for (int j = 0; j < g.snakes[i].length; j++) {
       out->snakes[i].body[j] = g.snakes[i].body[j];
     }

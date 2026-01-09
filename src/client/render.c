@@ -100,6 +100,18 @@ void *render_thread_main(void *arg) {
         c->paused = false;
         break;
     }
+    if (st.type == MSG_PLAYER_OVER) {
+      printf("\n=== ZOMREL SI ===\n");
+      printf("Hrac %d\n", st.over_player_id);
+      printf("Skore: %d\n", st.over_score);
+      printf("Cas v hre: %d s\n", st.over_time_in_game);
+
+      c->state = CLIENT_MENU;
+      c->paused = false;
+
+      c->running = true;         // appka beží ďalej
+      //break;                     // input thread skončí tiež
+    }
 
     if (st.type == MSG_STATE) {
         draw_state(&st);

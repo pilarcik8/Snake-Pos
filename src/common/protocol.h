@@ -12,6 +12,8 @@ typedef enum {
   MSG_INPUT,
   MSG_STATE,
   MSG_PAUSE,
+
+  MSG_PLAYER_OVER,
   MSG_GAME_OVER,
 
   MSG_CREATE_GAME,   
@@ -47,6 +49,7 @@ typedef struct {
   bool alive;
   int length;
   int score;
+  int time_in_game_sec;
   position_t body[MAX_SNAKE_LENGTH];
 } snake_state_t;
 
@@ -58,13 +61,17 @@ typedef struct {
 
   int width;
   int height;
-
   cell_t cells[MAX_WORLD_HEIGHT][MAX_WORLD_WIDTH];
 
   int assigned_player_id;
   
   snake_state_t snakes[MAX_PLAYERS];
   position_t fruits[MAX_PLAYERS];
+
+  // výsledok (pre MSG_PLAYER_OVER)
+  int over_player_id;
+  int over_score;
+  int over_time_in_game; // sekundy
 } server_message_t;
 
 #endif
