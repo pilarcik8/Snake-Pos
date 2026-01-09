@@ -95,9 +95,16 @@ void *render_thread_main(void *arg) {
     }
 
     if (st.type == MSG_GAME_OVER) {
-        printf("[Client] Koniec hry. Cas: %d\n", st.game_time);
+        printf("Koniec hry. Cas: %d\n", st.game_time);
         c->state = CLIENT_MENU;
         c->paused = false;
+        ipc_client_close(&c->ipc); 
+        printf("Hrac %d\n", st.over_player_id);
+        printf("Skore: %d\n", st.over_score);
+        printf("Cas v hre: %d s\n", st.over_time_in_game);
+      
+        printf("Pre vratenie do menu stlacte 'p'\n");
+
         break;
     }
     if (st.type == MSG_PLAYER_OVER) {
@@ -105,12 +112,13 @@ void *render_thread_main(void *arg) {
       printf("Hrac %d\n", st.over_player_id);
       printf("Skore: %d\n", st.over_score);
       printf("Cas v hre: %d s\n", st.over_time_in_game);
+      
+      printf("Pre vratenie do menu stlacte 'p'\n");
 
       c->state = CLIENT_MENU;
-      c->paused = false;
-
+      ipc_client_close(&c->ipc); 
       c->running = true;         // appka beží ďalej
-      //break;                     // input thread skončí tiež
+      break;                     // input thread skončí tiež
     }
 
     if (st.type == MSG_STATE) {

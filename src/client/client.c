@@ -282,7 +282,7 @@ void client_run(client_t *c) {
       }
 
       if (!client_connect_to(c, "127.0.0.1", port)) {
-         c->state = CLIENT_IN_GAME;
+        c->state = CLIENT_IN_GAME;
         c->paused = false;       
         printf("Nepodarilo sa pripojit na novy server (port %d).\n", port);
         continue;
