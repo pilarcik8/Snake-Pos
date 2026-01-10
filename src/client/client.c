@@ -10,22 +10,26 @@
 #include <stdlib.h>
 
 void client_init(client_t *c) {
-  memset(c, 0, sizeof(*c));
+  memset(c, 0, sizeof(*c)); // atributy = 0
   c->running = true;
   c->state = CLIENT_MENU;
   ipc_client_init(&c->ipc);
 }
 
+// pripojenie do portu serveru
 bool client_connect_to(client_t *c, const char *address, int port) {
-  if (c->ipc.connected) ipc_client_close(&c->ipc);
+  if (c->ipc.connected) {
+    ipc_client_close(&c->ipc);
+  }
   return ipc_client_connect(&c->ipc, address, port);
 }
 
+/* --- Menu --- */
 static int read_int_safe(int *out) {
   int rc = scanf("%d", out);
   if (rc == 1) return 1;
 
-  // vyhoď zbytok riadku
+  // vyhoď zbytok riadku - inak scanf vidí stale iba zlý input
   int ch;
   while ((ch = getchar()) != '\n' && ch != EOF) {}
   return 0;
@@ -39,10 +43,9 @@ static int menu_read_choice(void) {
   printf("3) Pokracovat\n");
   printf("4) Koniec\n");
   printf("> ");
-  fflush(stdout);
 
   while (!read_int_safe(&c) || c < 1 || c > 4) {
-    printf("Invalid value, try again:\n> ");
+    printf("Invalid choice, try again:\n> ");
   }
   return c;
 }
@@ -57,7 +60,7 @@ static int world_type_choice(void) {
   printf("> ");
 
   while (!read_int_safe(&c) ||  c < 1 || c > 3) {
-    printf("Invalid value, try again:\n> ");
+    printf("Invalid choice, try again:\n> ");
   }
   return c;
 }
@@ -71,7 +74,7 @@ static int game_type_choice(void) {
   printf("> ");
 
   while (!read_int_safe(&c) ||  c < 1 || c > 3) {
-    printf("Invalid value, try again:\n> ");
+    printf("Invalid choice, try again:\n> ");
   }
   return c;
 }
@@ -84,7 +87,7 @@ static bool multiplayer_choice(void) {
   printf("> ");
 
   while (!read_int_safe(&c) ||  c < 1 || c > 2) {
-    printf("Invalid value, try again:\n> ");
+    printf("Invalid choice, try again:\n> ");
   }
 
   if (c == 2) {
@@ -93,6 +96,7 @@ static bool multiplayer_choice(void) {
   return c;
 }
 
+/* ---- Tvorba správ --- */
 static void send_connect(client_t *c) {
   client_message_t msg;
   memset(&msg, 0, sizeof(msg));
@@ -115,15 +119,14 @@ static void send_create_game(client_t *c) {
     }
   }
 
-  /* MULTIPLAYER */
+  // multiplayer
   msg.cfg.allowed_multiplayer = multiplayer_choice();
 
-  /* MAP TYPE */
+  // typ mapy = bariery - ano/nie, ano => zo suboru - ano/nie
   msg.cfg.map.type = world_type_choice();
 
-  /* RANDOM / EMPTY MAP */
   if (msg.cfg.map.type == WORLD_WITH_OBSTACLES || msg.cfg.map.type == WORLD_NO_OBSTACLES) {
-
+    
     printf("Write width of the map (min 10):\n> ");
     while (!read_int_safe(&msg.cfg.map.width) ||
               msg.cfg.map.width < 10 || msg.cfg.map.width > MAX_WORLD_WIDTH) {
@@ -137,10 +140,8 @@ static void send_create_game(client_t *c) {
     }
   }
 
-  /* MAP FROM FILE */
   else if (msg.cfg.map.type == WORLD_MAP_LOADED) {
     printf("Write map file path:\n> ");
-    fflush(stdout);
 
     /* zjedz zvyšný newline zo stdin */
     int ch;
@@ -160,27 +161,45 @@ static void send_create_game(client_t *c) {
   ipc_client_send(&c->ipc, &msg);
 }
 
+void client_shutdown(client_t *c) {
+  if (!c->running) return;
+
+  if (c->ipc.connected) {
+    client_message_t msg;
+    memset(&msg, 0, sizeof(msg));
+    msg.type = MSG_DISCONNECT;
+    msg.direction = RIGHT;
+    ipc_client_send(&c->ipc, &msg);
+    ipc_client_close(&c->ipc);
+  }
+}
+/* ------- */ 
+
+// vytvor server
 static int spawn_server_and_get_port(void) {
+  // vytvorenie kom. kanalu // pfd[0] = read odtiaľ sa číta, pfd[1] = tam sa zapisuje
   int pfd[2];
   if (pipe(pfd) < 0) { 
     perror("pipe"); 
     return -1; 
   }
-
+  
   pid_t pid = fork();
-  if (pid < 0) { 
+  if (pid < 0) {   
     perror("fork"); 
     close(pfd[0]); 
     close(pfd[1]); 
     return -1; 
   }
-
+  
+  // dieťa
   if (pid == 0) {
     close(pfd[0]);
 
     char fdstr[32];
-    snprintf(fdstr, sizeof(fdstr), "%d", pfd[1]);
+    snprintf(fdstr, sizeof(fdstr), "%d", pfd[1]); //dieťa bude iba zapisova
 
+    // cast programu => samostany preoces
     char *argv[] = { "./server", "0", fdstr, NULL };
     execv(argv[0], argv);
 
@@ -202,16 +221,17 @@ static int spawn_server_and_get_port(void) {
   return port;
 }
 
+// pripojenie na existujuci server
 static bool prompt_join_info(char *ip_out, size_t ip_cap, int *port_out) {
   if (!ip_out || ip_cap == 0 || !port_out) return false;
 
   printf("Zadaj IP (enter = 127.0.0.1): ");
-  fflush(stdout);
 
   // zjedz newline
   int ch;
   while ((ch = getchar()) != '\n' && ch != EOF) {}
 
+  // načíta celý riadok do ip_out
   if (!fgets(ip_out, (int)ip_cap, stdin)) return false;
 
   // odstrihni \n
@@ -226,7 +246,6 @@ static bool prompt_join_info(char *ip_out, size_t ip_cap, int *port_out) {
   }
 
   printf("Zadaj PORT: ");
-  fflush(stdout);
 
   int port = 0;
   if (scanf("%d", &port) != 1) return false;
@@ -234,19 +253,6 @@ static bool prompt_join_info(char *ip_out, size_t ip_cap, int *port_out) {
 
   *port_out = port;
   return true;
-}
-
-void client_shutdown(client_t *c) {
-  if (!c->running) return;
-
-  if (c->ipc.connected) {
-    client_message_t msg;
-    memset(&msg, 0, sizeof(msg));
-    msg.type = MSG_DISCONNECT;
-    msg.direction = RIGHT;
-    ipc_client_send(&c->ipc, &msg);
-    ipc_client_close(&c->ipc);
-  }
 }
 
 static void start_game_threads(client_t *c) {
@@ -257,6 +263,7 @@ static void start_game_threads(client_t *c) {
   pthread_join(c->render_thread, NULL);
 }
 
+// proces loop
 void client_run(client_t *c) {
   if (!c->running) return;
 
@@ -324,9 +331,9 @@ void client_run(client_t *c) {
       c->state = CLIENT_IN_GAME;
       c->paused = false;
 
-      send_connect(c);
+      send_connect(c);    // pripojenie
 
-      start_game_threads(c);
+      start_game_threads(c);  // render a input
 
       if (c->running) c->state = CLIENT_MENU;
     }
@@ -340,7 +347,6 @@ void client_run(client_t *c) {
       c->state = CLIENT_IN_GAME;
       c->paused = false;
 
-      // toto na serveri spustí 3s resume (podľa tvojej logiky v MSG_CONNECT)
       send_connect(c);
 
       start_game_threads(c);  // znovu input + render

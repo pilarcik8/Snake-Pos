@@ -5,7 +5,7 @@
 #include <string.h>
 
 static void clear_screen(void) {
-  printf("\033[2J\033[H");
+  printf("\033[2J\033[H"); //ESC, vymaz obrazovku, kurzor [0,0]
 }
 
 static void draw_state(const server_message_t *st) {

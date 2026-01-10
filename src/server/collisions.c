@@ -7,7 +7,7 @@ static bool positions_equal(position_t a, position_t b) {
 }
 
 static bool hit_wall(const world_t *w, position_t head) {
-  if (!world_in_bounds(w, head.x, head.y)) return true;
+  if (!world_in_bounds(w, head.x, head.y)) return true; // moze tu byt lebo iba bezstenna mapa nema wrap
 
   return w->cells[head.y][head.x] == CELL_WALL;
 }
@@ -40,7 +40,7 @@ collision_result_t collisions_check_one(const world_t *w, const snake_t *snakes,
   r.hit_self = snake_self_collision(&snakes[idx]);
   r.hit_other = hit_other_snake(snakes, snake_count, idx);
   
-  if (w != NULL) {
+  if (w != NULL) { // existuje svet?
     r.hit_wall = hit_wall(w, head);
   }
   return r;

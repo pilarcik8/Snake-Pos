@@ -13,16 +13,17 @@ void ipc_client_init(ipc_client_t *c) {
 bool ipc_client_connect(ipc_client_t *c, const char *address, int port) {
   struct sockaddr_in server_addr;
 
-  int fd = socket(AF_INET, SOCK_STREAM, 0);
+  int fd = socket(AF_INET, SOCK_STREAM, 0); // ipv4, tpc, 0
   if (fd < 0) {
     perror("socket");
     return false;
   }
 
   memset(&server_addr, 0, sizeof(server_addr));
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons((uint16_t)port);
-
+  server_addr.sin_family = AF_INET; //ipv4
+  server_addr.sin_port = htons((uint16_t)port); 
+  
+  // ip -> binarka
   if (inet_pton(AF_INET, address, &server_addr.sin_addr) != 1) {
     perror("inet_pton");
     close(fd);

@@ -4,24 +4,25 @@
 #include <termios.h>
 #include <string.h>
 
-static struct termios g_old_term;
+static struct termios g_old_term; // pôvodné nastavenie terminálu
 
 static void enable_raw_mode(void) {
   struct termios t;
   tcgetattr(STDIN_FILENO, &g_old_term);
 
   t = g_old_term;
-  t.c_lflag &= (tcflag_t)~(ECHO | ICANON);
-  t.c_cc[VMIN] = 0;
-  t.c_cc[VTIME] = 1;
+  t.c_lflag &= (tcflag_t)~(ECHO | ICANON); // stlačanie klaves sa nezobrazuje
+  t.c_cc[VMIN] = 0; // ter. nemusí čakať na minimálny počet znakov, stačí 0
+  t.c_cc[VTIME] = 1; // ter. čaká 100ms na input
 
-  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+  tcsetattr(STDIN_FILENO, TCSANOW, &t); // aplikuje nastavania
 }
 
 static void disable_raw_mode(void) {
   tcsetattr(STDIN_FILENO, TCSANOW, &g_old_term);
 }
 
+// return == jeden znak z klavesnice
 static bool read_key(char *out) {
   char c;
   ssize_t n = read(STDIN_FILENO, &c, 1);
@@ -52,12 +53,12 @@ void *input_thread_main(void *arg) {
     if (key == 'p') {
       client_message_t msg;
       msg.type = MSG_PAUSE;
-      msg.direction = RIGHT; //nepouzivame na strane servera
+      msg.direction = RIGHT; //nevyuzijem na strane servera
 
       ipc_client_send(&c->ipc, &msg);
       c->paused = true;
       c->state = CLIENT_MENU;
-      break;  // ukonči input thread, aby join() v main skončil
+      break;  // join() v main skončí
     }
 
     direction_t dir;
