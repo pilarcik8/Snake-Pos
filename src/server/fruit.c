@@ -31,7 +31,7 @@ static bool any_snake_occupies(const snake_t *snakes, const bool *slot_used, int
 }
 
 static bool place_one_fruit(world_t *w, const snake_t *snakes, const bool *slot_used, int snake_count, fruit_state_t *fs) { 
-  for (int tries = 0; tries < 2000; tries++) {
+  for (int tries = 0; tries < 2000; tries++) { // skúš max 2000 random pozícií
     position_t p;
     p.x = rand() % w->width;
     p.y = rand() % w->height;
@@ -52,6 +52,7 @@ void fruit_init(fruit_state_t *fs) {
   fs->count = 0;
 }
 
+// kolko nam chyba jablk -> tolko vytvor
 void fruit_sync(world_t *w, const snake_t *snakes, const bool *slot_used, int snake_count, int active_snakes, fruit_state_t *fs) {
   while (fs->count > active_snakes) {
     fs->count--;
@@ -62,7 +63,7 @@ void fruit_sync(world_t *w, const snake_t *snakes, const bool *slot_used, int sn
   }
 
   while (fs->count < active_snakes) {
-    if (!place_one_fruit(w, snakes, slot_used, snake_count, fs)) break;     
+    if (!place_one_fruit(w, snakes, slot_used, snake_count, fs)) break;    
   }
 }
 

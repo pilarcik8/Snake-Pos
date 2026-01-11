@@ -16,15 +16,12 @@ int game_update(game_t *game, int player_count, int delta_ms) {
   /* ----- ŠTANDARTNY REŽIM ----- */
   if (game->mode == GAME_STANDARD) {
     if (player_count == 0) {
-      game->empty_time_ms += delta_ms; // cas bez pracov
+      game->empty_time_ms += delta_ms; // cas bez hracov
       if (game->empty_time_ms >= EMPTY_GAME_TIMEOUT_SEC * 1000) {
         printf("[GAME] No players for %d sec -> game over\n", EMPTY_GAME_TIMEOUT_SEC);
         game->running = false;
         return 0;
-      } /*else {    Len to spamuje klienta 
-        int left_time = EMPTY_GAME_TIMEOUT_SEC - game->empty_time_ms / 1000;
-        printf("[GAME] If nobody joins, game ends in %d sec\n", left_time);
-      }*/
+      }       
     } else {
       game->empty_time_ms = 0;
     }  

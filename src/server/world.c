@@ -1,7 +1,6 @@
 #include "world.h"
 
 #include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -45,8 +44,6 @@ bool world_init(world_t *w, int width, int height) {
   return true;
 }
 
-// dosiahnuteľnosť všetkých voľných polí pri náhodných prekážkach
-
 static bool find_any_empty(const world_t *w, int *sx, int *sy) {
   for (int y = 0; y < w->height; y++) {
     for (int x = 0; x < w->width; x++) {
@@ -59,26 +56,36 @@ static bool find_any_empty(const world_t *w, int *sx, int *sy) {
   return false;
 }
 
+// Breadth-First Search (do šírky)
 static bool all_empty_reachable(const world_t *w) {
   int sx, sy;
-  if (!find_any_empty(w, &sx, &sy)) return false;
 
-  const int maxn = MAX_WORLD_WIDTH * MAX_WORLD_HEIGHT;
-  unsigned char visited[maxn];
-  memset(visited, 0, sizeof(visited));
+  if (!find_any_empty(w, &sx, &sy)) {
+    return false;
+  }
 
-  int qx[maxn];
-  int qy[maxn];
-  int qh = 0, qt = 0;
+  int total = w->width * w->height;
 
-  #define IDX(xx, yy) ((yy) * w->width + (xx))
+  unsigned char visited[total];
+  for (int i = 0; i < total; i++) {
+    visited[i] = 0;
+  }
 
-  visited[IDX(sx, sy)] = 1;
-  qx[qt] = sx; qy[qt] = sy; qt++;
+  // front
+  int qx[total];
+  int qy[total];
+  int qh = 0;   // head 
+  int qt = 0;   // tail 
 
-  static const int dx[4] = { 1, -1, 0, 0 };
-  static const int dy[4] = { 0, 0, 1, -1 };
+  visited[sy * w->width + sx] = 1;
+  qx[qt] = sx;
+  qy[qt] = sy;
+  qt++;
 
+  const int dx[4] = {  1, -1,  0,  0 };
+  const int dy[4] = {  0,  0,  1, -1 };
+
+  /* BFS */
   while (qh < qt) {
     int x = qx[qh];
     int y = qy[qh];
@@ -87,55 +94,90 @@ static bool all_empty_reachable(const world_t *w) {
     for (int k = 0; k < 4; k++) {
       int nx = x + dx[k];
       int ny = y + dy[k];
-      if (!world_in_bounds(w, nx, ny)) continue;
+
+      if (nx < 0) continue;
+      if (ny < 0) continue;
+      if (nx >= w->width) continue;
+      if (ny >= w->height) continue;
+
       if (w->cells[ny][nx] != CELL_EMPTY) continue;
 
-      int id = IDX(nx, ny);
-      if (!visited[id]) {
-        visited[id] = 1;
-        qx[qt] = nx; qy[qt] = ny; qt++;
-      }
+      int id = ny * w->width + nx;  // index -> 1D poľe
+
+      if (visited[id] != 0) continue;
+
+      // označ a vlož do fronty
+      visited[id] = 1;
+      qx[qt] = nx;
+      qy[qt] = ny;
+      qt++;
     }
   }
-
+  
+  // kontrola
   for (int y = 0; y < w->height; y++) {
     for (int x = 0; x < w->width; x++) {
       if (w->cells[y][x] == CELL_EMPTY) {
-        if (!visited[IDX(x, y)]) return false;
+        int id = y * w->width + x;
+        if (visited[id] == 0) {
+          return false;
+        }
       }
     }
   }
 
-  #undef IDX
   return true;
 }
 
+// pridáva steny
 static bool generate_obstacles_connected(world_t *w, int obstacle_percent) {
+  if (!w) return false;
+
   if (obstacle_percent < 0) obstacle_percent = 0;
   if (obstacle_percent > 80) obstacle_percent = 80;
 
-  const int total = w->width * w->height;
-  const int target_walls = (total * obstacle_percent) / 100;
+  int total = w->width * w->height;
+  int target_walls = (total * obstacle_percent) / 100;
 
-  const int attempts = 200;
-  for (int a = 0; a < attempts; a++) {
-    world_clear(w);
+  world_clear(w);
+  int placed = 0;
 
-    int placed = 0;
-    while (placed < target_walls) {
+  const int max_failures_per_wall = 200;
+
+  while (placed < target_walls) {
+    int failures = 0;
+    int placed_this_round = 0;
+
+    // snaž sa nájsť jednu "dobrú" stenu
+    while (failures < max_failures_per_wall) {
       int x = rand() % w->width;
       int y = rand() % w->height;
-      if (w->cells[y][x] == CELL_EMPTY) {
-        w->cells[y][x] = CELL_WALL;
+
+      if (w->cells[y][x] != CELL_EMPTY) {
+        failures++;
+        continue;
+      }
+
+      // dočasne polož stenu
+      w->cells[y][x] = CELL_WALL;
+
+      if (all_empty_reachable(w)) {
+        // dobrá stena - necháme ju
         placed++;
+        placed_this_round = 1;
+        break;
+      } else {
+        // zlá stena - rollback
+        w->cells[y][x] = CELL_EMPTY;
+        failures++;
       }
     }
 
-    if (all_empty_reachable(w)) {
-      return true;
+    if (!placed_this_round) {
+      return true; 
     }
   }
-  return false;
+  return true;
 }
 
 bool world_generate(world_t *w, world_type_t kind, int obstacle_percent) {
@@ -149,9 +191,7 @@ bool world_generate(world_t *w, world_type_t kind, int obstacle_percent) {
   return generate_obstacles_connected(w, obstacle_percent);
 }
 
-// načítanie sveta zo súboru
-// ASCII: '#' = prekážka, '.' = voľné 
-
+// dlzka riadku
 static int line_len_no_nl(const char *s) {
   int n = 0;
   while (s[n] && s[n] != '\n' && s[n] != '\r') n++;
@@ -176,8 +216,14 @@ bool world_load_from_file(world_t *w, const char *path) {
     if (len == 0) continue; // ignoruj prázdne riadky
 
     if (width == -1) width = len;
-    if (len != width) { fclose(f); return false; }
-    if (width > MAX_WORLD_WIDTH) { fclose(f); return false; }
+    if (len != width) { 
+      fclose(f);
+      return false; 
+    }
+    if (width > MAX_WORLD_WIDTH) { 
+      fclose(f); 
+      return false; 
+    }
 
     height++;
   }

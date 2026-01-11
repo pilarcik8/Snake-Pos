@@ -12,7 +12,7 @@ typedef struct {
 
   int elapsed_time_sec; // od štartu hry
   int ms_accum;         // nazbierane ms pre prechod na 1 sekundu
-  int empty_time_ms;    // ms bez hráčov
+  int empty_time_ms;    // ms bez hráčov - GAME_TIMED
     
   bool allowed_multiplayer;
 
@@ -21,10 +21,6 @@ typedef struct {
 
 void game_init(game_t *game);
 
-/**
- * aktualizuje stav hry podľa delta_ms (SERVER_TICK_MS).
- * ret: 1 - pokracuje, 0 - koniec
- */
 int game_update(game_t *game, int player_count, int delta_ms);
 
 void game_toggle_pause(game_t *game);
