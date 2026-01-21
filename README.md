@@ -1,0 +1,1 @@
+Local multiplayer Snake game where each player uses their own terminal on the same device. Built with a server–client architecture, using pipelines and sockets for communication. Multithreaded and designed for Linux.
